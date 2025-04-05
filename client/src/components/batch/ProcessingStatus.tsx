@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { getQueueStatus, getUserImages } from '@/lib/api';
 import { Image } from '@/types';
-import { Clock, AlertCircle, CheckCircle, RotateCw, Upload, History } from 'lucide-react';
+import { Clock, AlertCircle, CheckCircle, RotateCw, Upload, History, Loader2 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 interface ProcessingStatusProps {
@@ -239,16 +239,9 @@ export default function ProcessingStatus({ onReupload }: ProcessingStatusProps) 
                 <Card key={image.id} className="border border-gray-200">
                   <CardContent className="p-4">
                     <div className="flex justify-between items-start">
-                      <div className="flex items-start gap-4">
-                        <div className="w-28 h-28 flex-shrink-0 rounded-md overflow-hidden bg-gray-100 border border-gray-200">
-                          <img 
-                            src={image.originalUrl} 
-                            className="w-full h-full object-cover" 
-                            alt="Original" 
-                          />
-                        </div>
-                        <div>
-                          <div className="flex items-center mb-2">
+                      <div className="flex flex-col w-full">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center">
                             <h3 className="font-medium">风格: {image.style}</h3>
                             <div className="ml-3 px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">
                               {image.status === 'completed' && '已完成'}
@@ -257,23 +250,69 @@ export default function ProcessingStatus({ onReupload }: ProcessingStatusProps) 
                               {image.status === 'failed' && '失败'}
                             </div>
                           </div>
-                          <p className="text-sm text-gray-500 mb-2">提交时间: {formatDate(new Date(image.createdAt))}</p>
-                          {image.errorMessage && (
-                            <p className="text-sm text-red-500">错误: {image.errorMessage}</p>
-                          )}
+                          <p className="text-xs text-gray-500">提交时间: {formatDate(new Date(image.createdAt))}</p>
+                        </div>
+                        
+                        {/* 显示原始图片和转换后的图片，并排 */}
+                        <div className="flex flex-wrap sm:flex-nowrap gap-4 items-center">
+                          <div className="w-full sm:w-1/2">
+                            <div className="aspect-square rounded-md overflow-hidden bg-gray-100 border border-gray-200">
+                              <img 
+                                src={image.originalUrl} 
+                                className="w-full h-full object-cover" 
+                                alt="原始图片" 
+                              />
+                            </div>
+                            <p className="text-xs text-center mt-1 text-gray-500">原始图片</p>
+                          </div>
+                          
+                          <div className="w-full sm:w-1/2">
+                            {image.status === 'completed' && image.transformedUrl ? (
+                              <>
+                                <div className="aspect-square rounded-md overflow-hidden bg-gray-100 border border-gray-200">
+                                  <img
+                                    src={image.transformedUrl}
+                                    className="w-full h-full object-cover"
+                                    alt="生成结果"
+                                  />
+                                </div>
+                                <div className="flex justify-between items-center mt-1">
+                                  <p className="text-xs text-gray-500">生成结果</p>
+                                  <a 
+                                    href={image.transformedUrl} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-indigo-700 hover:underline text-xs flex items-center"
+                                  >
+                                    查看大图
+                                  </a>
+                                </div>
+                              </>
+                            ) : image.status === 'processing' ? (
+                              <div className="aspect-square rounded-md overflow-hidden bg-gray-50 border border-gray-200 flex items-center justify-center">
+                                <div className="text-center">
+                                  <Loader2 className="h-10 w-10 text-indigo-500 animate-spin mx-auto mb-2" />
+                                  <p className="text-sm text-gray-500">处理中...</p>
+                                </div>
+                              </div>
+                            ) : image.status === 'pending' ? (
+                              <div className="aspect-square rounded-md overflow-hidden bg-gray-50 border border-gray-200 flex items-center justify-center">
+                                <div className="text-center">
+                                  <Clock className="h-10 w-10 text-gray-400 mx-auto mb-2" />
+                                  <p className="text-sm text-gray-500">等待处理</p>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="aspect-square rounded-md overflow-hidden bg-gray-50 border border-gray-200 flex items-center justify-center">
+                                <div className="text-center p-4">
+                                  <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-2" />
+                                  <p className="text-sm text-red-500">{image.errorMessage || '处理失败'}</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      
-                      {image.status === 'completed' && image.transformedUrl && (
-                        <a 
-                          href={image.transformedUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-indigo-700 hover:underline text-sm flex items-center"
-                        >
-                          查看结果
-                        </a>
-                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -320,7 +359,7 @@ export default function ProcessingStatus({ onReupload }: ProcessingStatusProps) 
               </div>
               
               <div className="mt-4 text-sm text-gray-600">
-                <p className="mb-2">风格转换消耗1积分/张</p>
+                <p className="mb-2">风格转换消耗10积分/张</p>
                 <p>
                   <a href="#" className="text-indigo-700 hover:underline">
                     查看详细积分规则

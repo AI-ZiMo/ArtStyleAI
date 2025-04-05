@@ -1,6 +1,6 @@
 import { useState, useRef, ChangeEvent } from 'react';
 import { UploadedFile } from '@/types';
-import { validateFile, generateId } from '@/lib/utils';
+import { validateFile, generateId, formatFileSize } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -28,13 +28,23 @@ export default function ImageUploader({ onFilesSelected, maxFiles = 50 }: ImageU
       const fileSizeMB = file.size / (1024 * 1024);
       console.log(`大图片(${fileSizeMB.toFixed(2)}MB)，进行压缩处理`);
       
+      // 根据图片大小设置不同的压缩参数
+      let quality = 0.8;  // 默认质量
+      
+      // 根据图片大小调整质量，越大的图片压缩得越多
+      if (fileSizeMB > 20) {
+        quality = 0.6;  // 大于20MB的图片使用较低质量
+      } else if (fileSizeMB > 10) {
+        quality = 0.7;  // 大于10MB的图片使用中等质量
+      }
+      
       // 设置压缩参数
       const options = {
         maxSizeMB: 4.8,           // 保持在5MB以下
-        maxWidthOrHeight: 1920,   // 限制最大宽高
+        maxWidthOrHeight: 2560,   // 限制最大宽高，提高到2560以保留更多细节
         useWebWorker: true,       // 使用WebWorker进行压缩
         fileType: file.type,      // 保持原始格式
-        quality: 0.75             // 中等压缩质量
+        quality: quality          // 动态压缩质量
       };
       
       // 执行压缩
@@ -45,7 +55,7 @@ export default function ImageUploader({ onFilesSelected, maxFiles = 50 }: ImageU
       const oldSizeMB = (file.size / (1024 * 1024)).toFixed(2);
       const newSizeMB = (compressedFile.size / (1024 * 1024)).toFixed(2);
       
-      console.log(`压缩结果: ${oldSizeMB}MB -> ${newSizeMB}MB, 压缩率: ${compressionRatio.toFixed(2)}x`);
+      console.log(`压缩结果: ${oldSizeMB}MB -> ${newSizeMB}MB, 压缩率: ${compressionRatio.toFixed(2)}x, 质量: ${quality}`);
       
       return compressedFile;
     } catch (error) {
@@ -107,8 +117,14 @@ export default function ImageUploader({ onFilesSelected, maxFiles = 50 }: ImageU
           continue; // 继续处理其他文件，而不是直接返回
         }
         
+        // 自动压缩大于5MB的图片，不显示错误
+        const needsCompression = validation.needsCompression || false;
+        if (needsCompression) {
+          console.log(`文件 ${file.name} (${formatFileSize(file.size)}) 超过5MB，将自动压缩`);
+        }
+        
         // 压缩图片（如果需要）
-        const compressedFile = await compressImage(file, validation.needsCompression || false);
+        const compressedFile = await compressImage(file, needsCompression);
         
         // 转换为base64以便存储和传输
         const base64Data = await fileToBase64(compressedFile);

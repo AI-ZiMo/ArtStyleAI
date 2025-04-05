@@ -15,7 +15,7 @@ interface Task {
 class TaskQueue {
   private queue: Task[] = [];
   private isProcessing: boolean = false;
-  private maxConcurrent: number = 1; // 设置允许同时处理的任务数量
+  private maxConcurrent: number = 100; // 大幅提高并行处理的任务数量，最多可以同时处理100个任务
   private currentProcessing: number = 0;
   private taskIdCounter: number = 1;
 
@@ -41,14 +41,13 @@ class TaskQueue {
 
   // 处理队列
   private async processQueue(): Promise<void> {
-    // 如果已经在处理，或队列为空，或已达到最大并发数，则返回
-    if (this.isProcessing || this.queue.length === 0 || this.currentProcessing >= this.maxConcurrent) {
+    // 如果队列为空，则返回
+    if (this.queue.length === 0) {
       return;
     }
 
     // 标记为正在处理
     this.isProcessing = true;
-    this.currentProcessing++;
 
     try {
       // 按照优先级和创建时间排序（先处理高优先级的，同优先级按先进先出）
@@ -59,63 +58,90 @@ class TaskQueue {
         return a.createdAt.getTime() - b.createdAt.getTime(); // 同优先级，先创建的在前
       });
 
-      // 取出队首任务
-      const task = this.queue.shift();
-      if (!task) {
-        this.isProcessing = false;
-        this.currentProcessing--;
+      // 计算可以并行处理的任务数量
+      const availableSlots = Math.max(0, this.maxConcurrent - this.currentProcessing);
+      
+      // 如果没有可用槽位，退出
+      if (availableSlots <= 0) {
         return;
       }
-
-      console.log(`开始处理任务: 任务ID ${task.id}, 图片ID ${task.imageId}, 风格 ${task.style}`);
-
-      // 开始处理任务
-      try {
-        // 获取图像信息
-        const image = await storage.getImage(task.imageId);
-        if (!image) {
-          console.error(`图片不存在: ID ${task.imageId}`);
+      
+      // 从队列中取出要处理的任务
+      const tasksToProcess = this.queue.splice(0, Math.min(availableSlots, this.queue.length));
+      
+      // 没有任务要处理，退出
+      if (tasksToProcess.length === 0) {
+        if (this.currentProcessing === 0) {
           this.isProcessing = false;
-          this.currentProcessing--;
-          this.processQueue(); // 继续处理队列中的下一个任务
-          return;
         }
-
-        // 更新图像状态为处理中
-        await storage.updateImageStatus(task.imageId, "processing");
-
-        // 解析原始图像数据
-        const buffer = base64ToBuffer(image.originalUrl);
-        console.log(`成功解析图片 ${task.imageId} 为buffer, 大小: ${buffer.length} 字节`);
-
-        // 转换图片
-        console.log(`调用transformImage处理图片 ${task.imageId}...`);
-        const transformedUrl = await transformImage(buffer, task.style, task.imageId);
-        console.log(`图片 ${task.imageId} 转换完成`);
-
-        // 更新图片状态为已完成
-        await storage.updateImageStatus(task.imageId, "completed", transformedUrl);
-        console.log(`图片 ${task.imageId} 状态更新为 "completed"`);
-      } catch (error: any) {
-        console.error(`处理任务时出错: 任务ID ${task.id}, 图片ID ${task.imageId}`, error);
-        
-        // 更新图片状态为失败
-        const errorMessage = error.message || "未知错误";
-        await storage.updateImageStatus(task.imageId, "failed", undefined, errorMessage);
-        console.log(`图片 ${task.imageId} 状态更新为 "failed", 错误: ${errorMessage}`);
+        return;
       }
+      
+      console.log(`开始并行处理 ${tasksToProcess.length} 个任务，当前进行中: ${this.currentProcessing}，最大并行: ${this.maxConcurrent}`);
+      
+      // 更新当前处理数量
+      this.currentProcessing += tasksToProcess.length;
+      
+      // 并行处理任务
+      const processPromises = tasksToProcess.map(async (task) => {
+        try {
+          console.log(`开始处理任务: 任务ID ${task.id}, 图片ID ${task.imageId}, 风格 ${task.style}`);
+          
+          // 获取图像信息
+          const image = await storage.getImage(task.imageId);
+          if (!image) {
+            console.error(`图片不存在: ID ${task.imageId}`);
+            return;
+          }
 
+          // 更新图像状态为处理中
+          await storage.updateImageStatus(task.imageId, "processing");
+
+          // 解析原始图像数据
+          const buffer = base64ToBuffer(image.originalUrl);
+          console.log(`成功解析图片 ${task.imageId} 为buffer, 大小: ${buffer.length} 字节`);
+
+          // 转换图片
+          console.log(`调用transformImage处理图片 ${task.imageId}...`);
+          const transformedUrl = await transformImage(buffer, task.style, task.imageId);
+          console.log(`图片 ${task.imageId} 转换完成`);
+
+          // 更新图片状态为已完成
+          await storage.updateImageStatus(task.imageId, "completed", transformedUrl);
+          console.log(`图片 ${task.imageId} 状态更新为 "completed"`);
+        } catch (error: any) {
+          console.error(`处理任务时出错: 任务ID ${task.id}, 图片ID ${task.imageId}`, error);
+          
+          // 更新图片状态为失败
+          const errorMessage = error.message || "未知错误";
+          await storage.updateImageStatus(task.imageId, "failed", undefined, errorMessage);
+          console.log(`图片 ${task.imageId} 状态更新为 "failed", 错误: ${errorMessage}`);
+        }
+      });
+      
+      // 等待所有任务完成，使用Promise.allSettled确保即使有任务失败也会继续处理其他任务
+      await Promise.allSettled(processPromises);
+      
       // 任务完成，减少当前处理数量
-      this.currentProcessing--;
-
-      // 继续处理队列中的下一个任务
-      this.isProcessing = false;
-      this.processQueue();
+      this.currentProcessing -= tasksToProcess.length;
+      
+      // 继续处理队列中的下一批任务（如果有的话）
+      if (this.queue.length > 0 && this.currentProcessing < this.maxConcurrent) {
+        // 允许处理下一批，递归调用
+        setImmediate(() => this.processQueue());
+      } else if (this.currentProcessing === 0) {
+        // 所有任务处理完成
+        this.isProcessing = false;
+      }
     } catch (error) {
       console.error('队列处理过程中发生错误:', error);
-      this.isProcessing = false;
-      this.currentProcessing--;
-      this.processQueue(); // 尝试继续处理
+      // 出错时减少计数，但不改变整体状态，以允许其他任务继续
+      this.currentProcessing = Math.max(0, this.currentProcessing - 1);
+      
+      // 如果所有任务都已处理完成
+      if (this.currentProcessing === 0) {
+        this.isProcessing = false;
+      }
     }
   }
 

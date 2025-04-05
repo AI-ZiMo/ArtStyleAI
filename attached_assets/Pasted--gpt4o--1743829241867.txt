@@ -1,0 +1,92 @@
+# 项目概览
+用户可以批量上传图片，选择吉卜力风格，系统会按照上传队列，调用gpt4o将用户图片转换为吉卜力风格的图片。
+
+## 核心功能
+### 用户注册登录
+邮箱登录注册
+### 批量图片生成
+最多上传50张图片，支持PNG、JGP或WebP，最大5MB/张，每张图片1元，
+用户可以点击浏览文件，上传本地图片。或者支持拖放图片。
+宫崎骏风格：温暖、梦幻的吉卜力动画风格。
+### 兑换积分
+风格转换消耗10积分/张，输入兑换码和邮箱地址
+### 积分充值
+基础套餐：9.9元 生成10张图片
+标准套餐： 22.9元 日常使用，生成25张图片
+高级套餐： 49.9元  专业创作 生成60张图片
+旗舰套餐： 119.9元  无限创意， 生成150张图片
+
+# 相关文档
+链接：https://wiki.tu-zi.com/zh/Code/nodejs
+API KEY： sk-SdFBDkQDJQylAqwkaa09iq2I7UYrzLAReqsOu20iCiyqMYtg
+安装依赖
+openai: 通过OpenAI的SDK请求API
+dotenv: 加载环境变量
+pnpm install
+pnpm add openai dotenv
+配置环境变量
+在项目的.env中配置环境变量
+
+OPENAI_API_KEY=你的API密钥
+OPENAI_BASE_URL=https://api.tu-zi.com/v1
+OPENAI_MODEL=gpt-4o-image-vip
+编写脚本
+import 'dotenv/config';
+
+import { OpenAI } from 'openai';
+import { image2Base64 } from './utils';
+
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+    baseURL: process.env.OPENAI_BASE_URL,
+});
+
+const imagePath = ''; // 图片的路径
+const imageType = imagePath.split('.').pop();
+
+async function main() {
+    try {
+        console.log("开始请求")
+        const stream = await openai.chat.completions.create({
+            model: process.env.OPENAI_MODEL as string,
+            messages: [{
+                role: 'user', content: [
+                    {
+                        type: "image_url",
+                        image_url: {
+                            url: `data:image/${imageType};base64,${image2Base64(imagePath)}`
+                        }
+                    },
+                    {
+                        type: "text",
+                        text: `把图片转换成文艺复兴时期的油画风格` // 提示词
+                    },
+                ]
+            }],
+            stream: true,
+        });
+
+        for await (const chunk of stream) {
+            const content = chunk.choices[0]?.delta?.content || '';
+            if (content) {
+                process.stdout.write(content); // 输出内容
+            }
+        }
+        process.stdout.write('\n');
+    } catch (error) {
+        console.error('Error processing image:', error);
+        process.exit(1);
+    }
+}
+
+main();
+
+image2Base64工具函数
+import fs from 'fs';
+
+export function image2Base64(imagePath: string) {
+    const image = fs.readFileSync(imagePath);
+    return image.toString('base64');
+}
+
+

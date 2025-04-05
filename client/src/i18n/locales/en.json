@@ -219,5 +219,11 @@
     "legal.copyright": "Copyright Notice",
     "legal.refund": "Refund Policy",
     "copyright": "© 2023 Imagic AI. All rights reserved."
+  },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "description": "An error occurred while rendering this component. We apologize for the inconvenience.",
+    "goHome": "Go to Home Page",
+    "tryAgain": "Try Again"
   }
 }

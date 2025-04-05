@@ -219,5 +219,11 @@
     "legal.copyright": "版权声明",
     "legal.refund": "退款政策",
     "copyright": "© 2023 Imagic AI. 保留所有权利。"
+  },
+  "errorBoundary": {
+    "title": "出错了",
+    "description": "渲染此组件时发生错误。我们对此带来的不便表示歉意。",
+    "goHome": "回到首页",
+    "tryAgain": "重试"
   }
 }

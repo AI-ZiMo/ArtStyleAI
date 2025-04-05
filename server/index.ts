@@ -40,11 +40,26 @@ app.use((req, res, next) => {
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    console.error("Global error handler caught:", err);
+    
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-
-    res.status(status).json({ message });
-    throw err;
+    
+    // Log detailed error information
+    console.error(`Error status: ${status}`);
+    console.error(`Error message: ${message}`);
+    if (err.stack) {
+      console.error(`Error stack: ${err.stack}`);
+    }
+    
+    // Send response with appropriate error info
+    res.status(status).json({ 
+      message,
+      error: app.get("env") === "development" ? err.stack : undefined 
+    });
+    
+    // Don't throw the error again - that can cause the server to crash
+    // as we've already handled it by sending a response
   });
 
   // importantly only setup vite in development and after

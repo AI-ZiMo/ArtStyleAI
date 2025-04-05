@@ -10,6 +10,7 @@ import History from "@/components/history/History";
 import NavBar from "@/components/layout/NavBar";
 import Footer from "@/components/layout/Footer";
 import { UserProvider } from "@/contexts/UserContext";
+import ErrorBoundary from "@/components/layout/ErrorBoundary";
 
 function Router() {
   return (
@@ -32,10 +33,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <UserProvider>
-        <Router />
-        <Toaster />
-      </UserProvider>
+      <ErrorBoundary>
+        <UserProvider>
+          <Router />
+          <Toaster />
+        </UserProvider>
+      </ErrorBoundary>
     </QueryClientProvider>
   );
 }

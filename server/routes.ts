@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import multer from "multer";
@@ -14,7 +14,7 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024, // 5MB limit
   },
   storage: multer.memoryStorage(),
-  fileFilter: (_req, file, cb) => {
+  fileFilter: (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
     // Accept only image files
     if (file.mimetype.startsWith("image/")) {
       cb(null, true);
@@ -218,6 +218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Process each image (start the process but don't wait for completion)
       imageIds.forEach(async (imageId) => {
         try {
+          console.log(`Starting transformation process for image ID: ${imageId} with style: ${style}`);
           const image = await storage.getImage(imageId);
           
           if (!image) {
@@ -225,17 +226,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return;
           }
           
+          console.log(`Found image ${imageId}, original URL length: ${image.originalUrl.length} characters`);
+          
           // Parse base64 from original URL
           const buffer = base64ToBuffer(image.originalUrl);
+          console.log(`Successfully parsed image ${imageId} to buffer, size: ${buffer.length} bytes`);
           
           // Transform image
+          console.log(`Calling transformImage for image ${imageId}...`);
           const transformedUrl = await transformImage(buffer, style, imageId);
+          console.log(`Image ${imageId} transformation completed successfully`);
           
           // Update image with transformed URL
           await storage.updateImageStatus(imageId, "completed", transformedUrl);
-        } catch (error) {
+          console.log(`Image ${imageId} status updated to "completed"`);
+        } catch (error: any) {
           console.error(`Error transforming image ${imageId}:`, error);
+          
+          // More detailed error logging
+          if (error.message) {
+            console.error(`Error message for image ${imageId}: ${error.message}`);
+          }
+          
           await storage.updateImageStatus(imageId, "failed");
+          console.log(`Image ${imageId} status updated to "failed"`);
         }
       });
       

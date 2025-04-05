@@ -53,7 +53,9 @@
       "drop": "放下图片",
       "formats": "支持PNG、JPG或WebP格式（每张最大5MB）",
       "selected": "已选择:",
-      "price": "总价:"
+      "price": "总价:",
+      "browse": "浏览文件",
+      "maxError": "您最多只能上传 {{max}} 张图片"
     },
     "style": {
       "title": "选择风格",
@@ -62,6 +64,24 @@
     "generate": "生成",
     "processing": "处理中...",
     "images": "张图片"
+  },
+  "styles": {
+    "ghibli": {
+      "name": "吉卜力动画风格",
+      "description": "温暖梦幻的吉卜力工作室动画风格"
+    },
+    "watercolor": {
+      "name": "水彩艺术",
+      "description": "柔和流畅的水彩画风格"
+    },
+    "cyberpunk": {
+      "name": "赛博朋克霓虹",
+      "description": "未来主义霓虹灯赛博朋克美学"
+    },
+    "vangogh": {
+      "name": "梵高风格",
+      "description": "大胆的笔触和鲜艳的色彩"
+    }
   },
   "points": {
     "title": "我的积分",

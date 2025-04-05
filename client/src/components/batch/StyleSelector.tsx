@@ -6,16 +6,28 @@ import { getStyles } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { Check } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTranslation } from 'react-i18next';
 
 interface StyleSelectorProps {
   selectedStyle: string;
   onStyleSelect: (style: string) => void;
 }
 
+// 将风格名称转换为翻译键
+const getStyleKey = (styleName: string): string => {
+  const lowercaseName = styleName.toLowerCase();
+  if (lowercaseName.includes('ghibli')) return 'ghibli';
+  if (lowercaseName.includes('watercolor')) return 'watercolor';
+  if (lowercaseName.includes('cyberpunk')) return 'cyberpunk';
+  if (lowercaseName.includes('van gogh')) return 'vangogh';
+  return styleName.toLowerCase().split(' ')[0];
+};
+
 export default function StyleSelector({ selectedStyle, onStyleSelect }: StyleSelectorProps) {
   const [styles, setStyles] = useState<Style[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const fetchStyles = async () => {
@@ -25,8 +37,8 @@ export default function StyleSelector({ selectedStyle, onStyleSelect }: StyleSel
       } catch (error) {
         console.error('Failed to fetch styles:', error);
         toast({
-          title: 'Error',
-          description: 'Failed to load style options',
+          title: t('toast.error'),
+          description: t('toast.styles.error'),
           variant: 'destructive',
         });
       } finally {
@@ -35,7 +47,7 @@ export default function StyleSelector({ selectedStyle, onStyleSelect }: StyleSel
     };
 
     fetchStyles();
-  }, [toast]);
+  }, [toast, t]);
 
   if (loading) {
     return (
@@ -71,8 +83,8 @@ export default function StyleSelector({ selectedStyle, onStyleSelect }: StyleSel
           <CardContent className="p-0">
             <div className="flex items-start mb-3">
               <div className="flex-grow">
-                <h3 className="font-poppins font-semibold">{style.name}</h3>
-                <p className="text-sm text-gray-600">{style.description}</p>
+                <h3 className="font-poppins font-semibold">{t(`styles.${getStyleKey(style.name)}.name`)}</h3>
+                <p className="text-sm text-gray-600">{t(`styles.${getStyleKey(style.name)}.description`)}</p>
               </div>
               <div className={`w-6 h-6 rounded-full ${
                 selectedStyle === style.name ? 'bg-primary' : 'bg-gray-200'

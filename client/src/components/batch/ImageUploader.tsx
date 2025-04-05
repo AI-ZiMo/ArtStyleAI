@@ -5,6 +5,7 @@ import { validateFile, generateId } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Upload, XCircle, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useTranslation } from 'react-i18next';
 
 interface ImageUploaderProps {
   onFilesSelected: (files: UploadedFile[]) => void;
@@ -13,13 +14,14 @@ interface ImageUploaderProps {
 
 export default function ImageUploader({ onFilesSelected, maxFiles = 50 }: ImageUploaderProps) {
   const [error, setError] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setError(null);
     
     // Check if user is trying to upload more than the max allowed files
     if (acceptedFiles.length > maxFiles) {
-      setError(`You can only upload up to ${maxFiles} images`);
+      setError(t('batch.upload.maxError', { max: maxFiles }));
       return;
     }
     
@@ -77,14 +79,14 @@ export default function ImageUploader({ onFilesSelected, maxFiles = 50 }: ImageU
             <Upload className="h-16 w-16 text-gray-400" />
           </div>
           <p className="text-lg font-medium text-gray-700 mb-1">
-            {isDragActive ? 'Drop images here' : 'Drag images here or click to browse'}
+            {isDragActive ? t('batch.upload.drop') : t('batch.upload.drag')}
           </p>
           <p className="text-sm text-gray-500">
-            Supports PNG, JPG or WebP (max 5MB per image)
+            {t('batch.upload.formats')}
           </p>
         </div>
         
-        <Button>Browse Files</Button>
+        <Button>{t('batch.upload.browse')}</Button>
       </div>
     </div>
   );

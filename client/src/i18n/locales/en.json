@@ -53,7 +53,9 @@
       "drop": "Drop images",
       "formats": "Supports PNG, JPG or WebP format (max 5MB each)",
       "selected": "Selected:",
-      "price": "Total Price:"
+      "price": "Total Price:",
+      "browse": "Browse Files",
+      "maxError": "You can only upload up to {{max}} images"
     },
     "style": {
       "title": "Select Style",
@@ -62,6 +64,24 @@
     "generate": "Generate",
     "processing": "Processing...",
     "images": "images"
+  },
+  "styles": {
+    "ghibli": {
+      "name": "Ghibli Anime Style",
+      "description": "Warm, dreamy Studio Ghibli animation style"
+    },
+    "watercolor": {
+      "name": "Watercolor Art",
+      "description": "Soft, flowing watercolor painting style"
+    },
+    "cyberpunk": {
+      "name": "Cyberpunk Neon",
+      "description": "Futuristic neon-lit cyberpunk aesthetic"
+    },
+    "vangogh": {
+      "name": "Van Gogh Style",
+      "description": "Bold brushstrokes and vivid colors"
+    }
   },
   "points": {
     "title": "My Points",

@@ -3,9 +3,10 @@ import fs from "fs";
 import path from "path";
 import { storage } from "./storage";
 
-// Initialize OpenAI with API key
+// Initialize OpenAI with API key and custom base URL
 const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY 
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: process.env.OPENAI_BASE_URL || "https://api.tu-zi.com/v1"
 });
 
 // Helper function to convert base64 to buffer
@@ -47,7 +48,7 @@ export async function transformImage(
     console.log(`Enhanced prompt for image ${imageId}: ${enhancedPrompt.substring(0, 100)}...`);
     
     const response = await openai.chat.completions.create({
-      model: "gpt-4o", // Using the latest OpenAI vision model
+      model: process.env.OPENAI_MODEL || "gpt-4o-image-vip", // Using the specified OpenAI vision model
       messages: [
         {
           role: "system",

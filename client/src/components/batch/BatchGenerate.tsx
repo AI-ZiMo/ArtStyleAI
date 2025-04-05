@@ -14,7 +14,9 @@ import { Loader2, Check } from 'lucide-react';
 export default function BatchGenerate() {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [selectedStyle, setSelectedStyle] = useState('宫崎骏风格');
+  const [selectedStyle, setSelectedStyle] = useState('Ghibli Anime Style');
+  const [readyToProcess, setReadyToProcess] = useState(false);
+  const [pendingImageIds, setPendingImageIds] = useState<number[]>([]);
   const [processing, setProcessing] = useState(false);
   const [showRechargeDialog, setShowRechargeDialog] = useState(false);
   const [showProcessingStatus, setShowProcessingStatus] = useState(false);
@@ -28,8 +30,19 @@ export default function BatchGenerate() {
     };
   }, [uploadedFiles]);
 
-  const handleFilesSelected = (files: UploadedFile[]) => {
+  const handleFilesSelected = async (files: UploadedFile[]) => {
+    if (!user) {
+      toast({
+        title: "错误",
+        description: "请先登录",
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     // 将新上传的文件添加到现有文件列表中，同时检查总数不超过最大限制
+    let newFiles: UploadedFile[] = [];
+    
     setUploadedFiles(prevFiles => {
       // 如果添加这些文件会导致总数超过50个，显示提示并只取前面的部分
       const combinedList = [...prevFiles, ...files];
@@ -39,10 +52,71 @@ export default function BatchGenerate() {
           description: "最多可上传50张照片",
           variant: 'destructive',
         });
+        newFiles = files.slice(0, 50 - prevFiles.length);
         return combinedList.slice(0, 50);
       }
+      newFiles = files;
       return combinedList;
     });
+    
+    if (newFiles.length === 0) return;
+    
+    try {
+      setIsUploading(true);
+      
+      // 标记新文件为正在上传状态
+      setUploadedFiles(prevFiles => 
+        prevFiles.map(file => ({
+          ...file,
+          isUploaded: newFiles.some(newFile => newFile.id === file.id) ? false : file.isUploaded
+        }))
+      );
+      
+      // 上传图片到服务器
+      const uploadResult = await uploadImages(
+        newFiles,
+        selectedStyle,
+        user.email
+      );
+      
+      console.log('Upload successful:', uploadResult);
+      
+      // 标记新上传的文件为已上传
+      setUploadedFiles(prevFiles => 
+        prevFiles.map(file => ({
+          ...file,
+          isUploaded: newFiles.some(newFile => newFile.id === file.id) ? true : file.isUploaded
+        }))
+      );
+      
+      // 更新待处理图片ID列表
+      const newImageIds = uploadResult.images.map(img => img.id);
+      setPendingImageIds(prev => [...prev, ...newImageIds]);
+      
+      // 显示上传成功提示
+      toast({
+        title: "上传成功",
+        description: `已上传 ${newFiles.length} 张图片`,
+      });
+      
+    } catch (error) {
+      console.error('Upload failed:', error);
+      toast({
+        title: "上传失败",
+        description: "图片上传失败，请稍后重试",
+        variant: 'destructive',
+      });
+      
+      // 重置上传状态
+      setUploadedFiles(prevFiles => 
+        prevFiles.map(file => ({
+          ...file,
+          isUploaded: newFiles.some(newFile => newFile.id === file.id) ? false : file.isUploaded
+        }))
+      );
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleRemoveFile = (id: string) => {
@@ -69,17 +143,17 @@ export default function BatchGenerate() {
       return;
     }
     
-    if (uploadedFiles.length === 0) {
+    if (pendingImageIds.length === 0) {
       toast({
         title: "错误",
-        description: "请先上传图片",
+        description: "没有可处理的图片",
         variant: 'destructive',
       });
       return;
     }
     
     // 检查积分是否足够
-    if (user.points < uploadedFiles.length) {
+    if (user.points < pendingImageIds.length) {
       toast({
         title: "积分不足",
         description: "您的积分不足，请充值后再试",
@@ -92,87 +166,39 @@ export default function BatchGenerate() {
     
     try {
       setProcessing(true);
-      setIsUploading(true);
+      setReadyToProcess(true);
       
-      // 先标记所有文件为正在上传
-      setUploadedFiles(prevFiles => 
-        prevFiles.map(file => ({
-          ...file,
-          isUploaded: false
-        }))
-      );
+      console.log('Starting transformation for images:', pendingImageIds);
+      console.log('Using style:', selectedStyle);
       
-      // 上传图片到服务器 - 使用经过压缩的图片数据
-      const uploadResult = await uploadImages(
-        uploadedFiles,
-        selectedStyle,
-        user.email
-      );
-
-      console.log('Upload successful:', uploadResult);
+      const transformResult = await transformImages(pendingImageIds, selectedStyle, user.email);
+      console.log('Transformation initiated:', transformResult);
       
-      // 标记所有文件为已上传
-      setUploadedFiles(prevFiles => 
-        prevFiles.map(file => ({
-          ...file,
-          isUploaded: true
-        }))
-      );
+      // 刷新用户数据获取更新后的积分
+      await refreshUser();
       
-      setIsUploading(false);
+      // 清理文件预览并重置状态
+      uploadedFiles.forEach(file => URL.revokeObjectURL(file.preview));
+      setUploadedFiles([]);
+      setPendingImageIds([]);
       
-      try {
-        // 然后开始转换处理
-        const imageIds = uploadResult.images.map(img => img.id);
-        
-        console.log('Starting transformation for images:', imageIds);
-        console.log('Using style:', selectedStyle);
-        
-        const transformResult = await transformImages(imageIds, selectedStyle, user.email);
-        console.log('Transformation initiated:', transformResult);
-        
-        // 刷新用户数据获取更新后的积分
-        await refreshUser();
-        
-        // 清理文件预览
-        uploadedFiles.forEach(file => URL.revokeObjectURL(file.preview));
-        
-        // 重置状态
-        setUploadedFiles([]);
-        
-        toast({
-          title: "处理启动",
-          description: `已开始处理 ${uploadedFiles.length} 张图片`,
-        });
-        
-        // 显示处理状态页面
-        setShowProcessingStatus(true);
-      } catch (transformError) {
-        console.error('Transformation failed:', transformError);
-        toast({
-          title: "处理失败",
-          description: "图片转换失败，请稍后重试",
-          variant: 'destructive',
-        });
-      }
-    } catch (uploadError) {
-      console.error('Upload failed:', uploadError);
       toast({
-        title: "上传失败",
-        description: "图片上传失败，请稍后重试",
-        variant: 'destructive',
+        title: "处理启动",
+        description: `已开始处理 ${pendingImageIds.length} 张图片`,
       });
       
-      // 重置上传状态
-      setUploadedFiles(prevFiles => 
-        prevFiles.map(file => ({
-          ...file,
-          isUploaded: false
-        }))
-      );
+      // 显示处理状态页面
+      setShowProcessingStatus(true);
+    } catch (error) {
+      console.error('Transformation failed:', error);
+      toast({
+        title: "处理失败",
+        description: "图片转换失败，请稍后重试",
+        variant: 'destructive',
+      });
+      setReadyToProcess(false);
     } finally {
       setProcessing(false);
-      setIsUploading(false);
     }
   };
 
@@ -274,60 +300,63 @@ export default function BatchGenerate() {
               <h2 className="font-semibold text-xl mb-2">选择风格 (所有图片将应用相同风格)</h2>
               <p className="text-gray-500 mb-4">为您的图片选择最合适的处理风格</p>
               
-              {/* 简化的风格选择器 */}
+              {/* 风格选择器 */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
                 <div 
                   className={`relative border rounded-lg p-4 cursor-pointer transition-all ${
-                    selectedStyle === '宫崎骏风格' 
+                    selectedStyle === 'Ghibli Anime Style' 
                       ? 'border-indigo-700 bg-indigo-50' 
                       : 'border-gray-200 hover:border-indigo-300'
                   }`}
-                  onClick={() => setSelectedStyle('宫崎骏风格')}
+                  onClick={() => setSelectedStyle('Ghibli Anime Style')}
                 >
-                  {selectedStyle === '宫崎骏风格' && (
+                  {selectedStyle === 'Ghibli Anime Style' && (
                     <div className="absolute top-2 right-2 h-5 w-5 bg-indigo-700 rounded-full flex items-center justify-center">
                       <Check className="h-3 w-3 text-white" />
                     </div>
                   )}
-                  <h3 className="font-medium text-base mb-1">宫崎骏风格</h3>
+                  <h3 className="font-medium text-base mb-1">吉卜力动画风格</h3>
                   <p className="text-sm text-gray-500">温暖、多彩的手绘风格，力求展现宫崎骏作品中的动画风格</p>
                 </div>
                 
                 <div 
                   className={`relative border rounded-lg p-4 cursor-pointer transition-all ${
-                    selectedStyle === '人物包装盒' 
+                    selectedStyle === 'Watercolor Art' 
                       ? 'border-indigo-700 bg-indigo-50' 
                       : 'border-gray-200 hover:border-indigo-300'
                   }`}
-                  onClick={() => setSelectedStyle('人物包装盒')}
+                  onClick={() => setSelectedStyle('Watercolor Art')}
                 >
-                  {selectedStyle === '人物包装盒' && (
+                  {selectedStyle === 'Watercolor Art' && (
                     <div className="absolute top-2 right-2 h-5 w-5 bg-indigo-700 rounded-full flex items-center justify-center">
                       <Check className="h-3 w-3 text-white" />
                     </div>
                   )}
-                  <h3 className="font-medium text-base mb-1">人物包装盒</h3>
-                  <p className="text-sm text-gray-500">将人物设计成适合真实的仿人偶包装盒</p>
+                  <h3 className="font-medium text-base mb-1">水彩艺术风格</h3>
+                  <p className="text-sm text-gray-500">柔和流畅的水彩画风格，带有优雅的手绘质感</p>
                 </div>
               </div>
               
               <div className="flex flex-col items-end mt-4 border-t border-gray-100 pt-4">
-                <div className="text-lg font-semibold mb-2">总计: <span className="text-indigo-700">¥{uploadedFiles.length}.00</span></div>
-                <div className="text-sm text-gray-500 mb-3">{uploadedFiles.length}张图片 × ¥1/张</div>
+                <div className="text-lg font-semibold mb-2">
+                  待处理图片: <span className="text-indigo-700">{pendingImageIds.length}</span> 张 
+                  {pendingImageIds.length > 0 && <span className="ml-3 text-green-600">（已上传）</span>}
+                </div>
+                <div className="text-sm text-gray-500 mb-3">费用：{pendingImageIds.length}张图片 × ¥1/张 = <span className="text-indigo-700 font-semibold">¥{pendingImageIds.length}.00</span></div>
                 <Button
-                  className="px-6 py-5 bg-indigo-700 hover:bg-indigo-800 text-white"
+                  className="px-6 py-5 bg-green-600 hover:bg-green-700 text-white"
                   size="lg"
                   onClick={handleStartTransformation}
-                  disabled={uploadedFiles.length === 0 || processing || isUploading || !user}
+                  disabled={pendingImageIds.length === 0 || processing || !user}
                 >
-                  {processing || isUploading ? (
+                  {processing ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      {isUploading ? "上传中..." : "处理中..."}
+                      处理中...
                     </>
                   ) : (
                     <>
-                      <span>提交图片</span>
+                      <span>开始处理</span>
                       <ArrowRight className="ml-2 h-5 w-5" />
                     </>
                   )}

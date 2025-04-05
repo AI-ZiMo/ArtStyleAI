@@ -25,6 +25,13 @@ export default function ProcessingStatus({ onReupload }: ProcessingStatusProps) 
     failed: 0,
     total: 0
   });
+  
+  // 队列状态
+  const [queueStatus, setQueueStatus] = useState({
+    queueLength: 0,
+    processing: false,
+    currentProcessing: 0
+  });
 
   // 获取用户图片和状态
   useEffect(() => {
@@ -33,6 +40,8 @@ export default function ProcessingStatus({ onReupload }: ProcessingStatusProps) 
       
       try {
         setIsLoading(true);
+        
+        // 获取用户图片
         const userImages = await getUserImages(user.email);
         setImages(userImages);
         
@@ -49,6 +58,10 @@ export default function ProcessingStatus({ onReupload }: ProcessingStatusProps) 
           failed,
           total: userImages.length
         });
+        
+        // 获取队列状态
+        const queueData = await getQueueStatus();
+        setQueueStatus(queueData);
       } catch (error) {
         console.error('Failed to fetch images:', error);
       } finally {
@@ -88,6 +101,27 @@ export default function ProcessingStatus({ onReupload }: ProcessingStatusProps) 
                   <span>已完成: {stats.completed}/{stats.total}</span>
                 </div>
                 <Progress value={(stats.completed / Math.max(stats.total, 1)) * 100} className="h-2" />
+              </div>
+              
+              {/* 队列状态信息 */}
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg mb-4">
+                <h3 className="font-medium text-amber-800 mb-2">系统队列状态</h3>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="text-center">
+                    <div className="text-lg font-semibold text-amber-700">{queueStatus.queueLength}</div>
+                    <div className="text-xs text-amber-600">等待中</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-semibold text-amber-700">{queueStatus.currentProcessing}</div>
+                    <div className="text-xs text-amber-600">正在处理</div>
+                  </div>
+                  <div className="text-center">
+                    <div className={`text-lg font-semibold ${queueStatus.processing ? 'text-green-600' : 'text-gray-500'}`}>
+                      {queueStatus.processing ? '运行中' : '空闲'}
+                    </div>
+                    <div className="text-xs text-amber-600">系统状态</div>
+                  </div>
+                </div>
               </div>
               
               <div className="grid grid-cols-4 gap-4 mb-6">
@@ -257,7 +291,7 @@ export default function ProcessingStatus({ onReupload }: ProcessingStatusProps) 
               </div>
               
               <div className="mt-4 text-sm text-gray-600">
-                <p className="mb-2">风格转换消耗10积分/张</p>
+                <p className="mb-2">风格转换消耗1积分/张</p>
                 <p>
                   <a href="#" className="text-indigo-700 hover:underline">
                     查看详细积分规则

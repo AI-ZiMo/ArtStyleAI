@@ -106,8 +106,28 @@ export class MemStorage implements IStorage {
     this.createStyle({
       name: "Ghibli Anime Style",
       description: "Warm, dreamy Studio Ghibli animation style",
-      pointCost: 10,
+      pointCost: 1,
       promptTemplate: "Transform this image into a warm, dreamy anime style reminiscent of classic Japanese animation, with soft colors, detailed backgrounds, and charming character designs.",
+      exampleBeforeUrl: "https://images.unsplash.com/photo-1547055442-5e3f464cf044?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
+      exampleAfterUrl: "https://images.unsplash.com/photo-1563994234673-9436c578ab4b?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"
+    });
+    
+    // 添加UI中使用的宫崎骏风格
+    this.createStyle({
+      name: "宫崎骏风格",
+      description: "温暖、多彩的手绘风格，力求展现宫崎骏作品中的动画风格",
+      pointCost: 1,
+      promptTemplate: "将这张图片转换成宫崎骏动画风格，温暖的色调，细致的背景，以及富有魅力的人物设计。",
+      exampleBeforeUrl: "https://images.unsplash.com/photo-1547055442-5e3f464cf044?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
+      exampleAfterUrl: "https://images.unsplash.com/photo-1563994234673-9436c578ab4b?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"
+    });
+    
+    // 添加UI中使用的人物包装盒风格
+    this.createStyle({
+      name: "人物包装盒",
+      description: "将人物设计成适合真实的仿人偶包装盒",
+      pointCost: 1,
+      promptTemplate: "将这张人物照片转换成一个精美的人偶玩具包装盒，包括包装盒设计、标签和产品详情。",
       exampleBeforeUrl: "https://images.unsplash.com/photo-1547055442-5e3f464cf044?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
       exampleAfterUrl: "https://images.unsplash.com/photo-1563994234673-9436c578ab4b?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"
     });
@@ -115,7 +135,7 @@ export class MemStorage implements IStorage {
     this.createStyle({
       name: "Watercolor Art",
       description: "Soft, flowing watercolor painting style",
-      pointCost: 10,
+      pointCost: 1,
       promptTemplate: "Transform this image into a delicate watercolor painting with soft, flowing colors, gentle brush strokes, and artistic texture that gives it an elegant hand-painted feel.",
       exampleBeforeUrl: "https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
       exampleAfterUrl: "https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"
@@ -124,7 +144,7 @@ export class MemStorage implements IStorage {
     this.createStyle({
       name: "Cyberpunk Neon",
       description: "Futuristic neon-lit cyberpunk aesthetic",
-      pointCost: 10,
+      pointCost: 1,
       promptTemplate: "Transform this image into a futuristic cyberpunk scene with vibrant neon lights, high-tech elements, urban dystopian atmosphere, and a color palette dominated by electric blues, pinks, and purples.",
       exampleBeforeUrl: "https://images.unsplash.com/photo-1445966275305-9806327ea2b5?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
       exampleAfterUrl: "https://images.unsplash.com/photo-1520036739699-715c34e82e0f?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"
@@ -133,7 +153,7 @@ export class MemStorage implements IStorage {
     this.createStyle({
       name: "Van Gogh Style",
       description: "Bold brushstrokes and vivid colors",
-      pointCost: 10,
+      pointCost: 1,
       promptTemplate: "Transform this image into the distinctive style of Vincent Van Gogh, with bold, visible brushstrokes, swirling patterns, intense colors, and the emotional, expressive quality characteristic of his paintings.",
       exampleBeforeUrl: "https://images.unsplash.com/photo-1556195332-95503f664ced?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
       exampleAfterUrl: "https://images.unsplash.com/photo-1541680670548-88e8cd23c0f4?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"

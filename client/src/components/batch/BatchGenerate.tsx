@@ -102,12 +102,14 @@ export default function BatchGenerate() {
         }))
       );
       
-      // 上传图片到服务器
+      // 上传图片到服务器 - 使用经过压缩的图片数据
       const uploadResult = await uploadImages(
         uploadedFiles,
         selectedStyle,
         user.email
       );
+
+      console.log('Upload successful:', uploadResult);
       
       // 标记所有文件为已上传
       setUploadedFiles(prevFiles => 
@@ -119,31 +121,45 @@ export default function BatchGenerate() {
       
       setIsUploading(false);
       
-      // 然后开始转换处理
-      const imageIds = uploadResult.images.map(img => img.id);
-      await transformImages(imageIds, selectedStyle, user.email);
-      
-      // 刷新用户数据获取更新后的积分
-      await refreshUser();
-      
-      // 清理文件预览
-      uploadedFiles.forEach(file => URL.revokeObjectURL(file.preview));
-      
-      // 重置状态
-      setUploadedFiles([]);
-      
+      try {
+        // 然后开始转换处理
+        const imageIds = uploadResult.images.map(img => img.id);
+        
+        console.log('Starting transformation for images:', imageIds);
+        console.log('Using style:', selectedStyle);
+        
+        const transformResult = await transformImages(imageIds, selectedStyle, user.email);
+        console.log('Transformation initiated:', transformResult);
+        
+        // 刷新用户数据获取更新后的积分
+        await refreshUser();
+        
+        // 清理文件预览
+        uploadedFiles.forEach(file => URL.revokeObjectURL(file.preview));
+        
+        // 重置状态
+        setUploadedFiles([]);
+        
+        toast({
+          title: "处理启动",
+          description: `已开始处理 ${uploadedFiles.length} 张图片`,
+        });
+        
+        // 显示处理状态页面
+        setShowProcessingStatus(true);
+      } catch (transformError) {
+        console.error('Transformation failed:', transformError);
+        toast({
+          title: "处理失败",
+          description: "图片转换失败，请稍后重试",
+          variant: 'destructive',
+        });
+      }
+    } catch (uploadError) {
+      console.error('Upload failed:', uploadError);
       toast({
-        title: "处理启动",
-        description: `已开始处理 ${uploadedFiles.length} 张图片`,
-      });
-      
-      // 显示处理状态页面
-      setShowProcessingStatus(true);
-    } catch (error) {
-      console.error('Transformation failed:', error);
-      toast({
-        title: "处理失败",
-        description: "图片处理失败，请稍后重试",
+        title: "上传失败",
+        description: "图片上传失败，请稍后重试",
         variant: 'destructive',
       });
       

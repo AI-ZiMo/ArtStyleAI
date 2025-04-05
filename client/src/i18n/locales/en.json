@@ -8,8 +8,8 @@
   },
   "home": {
     "hero": {
-      "title": "Transform Your Photos into Ghibli Anime Style with AI",
-      "description": "Use our AI technology to transform your photos into beautiful Ghibli-style animation. Limited time offer: only $0.15 per image!",
+      "title": "Transform Your Photos into Japanese Anime Style with AI",
+      "description": "Use our AI technology to transform your photos into beautiful Japanese anime-style artwork. Limited time offer: only $0.15 per image!",
       "startButton": "Get Started",
       "priceButton": "View Pricing"
     },
@@ -17,11 +17,11 @@
       "title": "Why Choose Imagic",
       "ai": {
         "title": "Advanced AI Transformation",
-        "description": "Precisely captures thousands of anime art styles to transform your photos into Miyazaki masterpieces"
+        "description": "Precisely captures thousands of anime art styles to transform your photos into stunning Japanese anime masterpieces"
       },
       "speed": {
         "title": "Fast Processing, Instant Delivery",
-        "description": "Get high-quality Ghibli-style images in just seconds, no waiting required"
+        "description": "Get high-quality Japanese anime-style images in just seconds, no waiting required"
       },
       "security": {
         "title": "Secure Processing",
@@ -30,7 +30,7 @@
     },
     "examples": {
       "title": "Amazing Transformations",
-      "description": "See how our AI technology turns your photos into Ghibli-style animation with smooth, natural transformations that will amaze you",
+      "description": "See how our AI technology turns your photos into Japanese anime-style artwork with smooth, natural transformations that will amaze you",
       "startButton": "Start Creating Your Animated Photos"
     },
     "stats": {
@@ -39,8 +39,8 @@
       "rating": "Average Rating"
     },
     "cta": {
-      "title": "Ready to experience the Ghibli style?",
-      "description": "Upload your photos now and let AI transform them into captivating Ghibli-style animation",
+      "title": "Ready to experience the Japanese anime style?",
+      "description": "Upload your photos now and let AI transform them into captivating Japanese anime-style artwork",
       "button": "Get Started Now"
     }
   },
@@ -66,9 +66,9 @@
     "images": "images"
   },
   "styles": {
-    "ghibli": {
-      "name": "Ghibli Anime Style",
-      "description": "Warm, dreamy Studio Ghibli animation style"
+    "japaneseAnime": {
+      "name": "Japanese Anime Style",
+      "description": "Vibrant and expressive Japanese anime style"
     },
     "watercolor": {
       "name": "Watercolor Art",
@@ -204,7 +204,7 @@
   },
   "footer": {
     "services": "Services",
-    "services.ghibli": "Ghibli Style Transformation",
+    "services.japaneseAnime": "Japanese Anime Style Transformation",
     "services.pricing": "Pricing Plans",
     "services.enterprise": "Enterprise Solutions",
     "services.batch": "Batch Processing",

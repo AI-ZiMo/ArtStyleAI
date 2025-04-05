@@ -128,14 +128,14 @@ export default function BatchGenerate() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-poppins font-bold mb-8">{t('batch.title')}</h1>
+      <h1 className="text-3xl font-bold mb-8">批量图片生成</h1>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <Card className="mb-8">
             <CardContent className="p-6">
-              <h2 className="font-poppins font-semibold text-2xl mb-4">{t('batch.upload.title')}</h2>
-              <p className="text-gray-600 mb-6">{t('batch.upload.description')}</p>
+              <h2 className="font-semibold text-2xl mb-4">批量上传照片</h2>
+              <p className="text-gray-600 mb-6">最多可上传50张照片，每张照片 ¥1</p>
               
               <ImageUploader onFilesSelected={handleFilesSelected} />
               
@@ -143,44 +143,53 @@ export default function BatchGenerate() {
                 <div>
                   <div className="flex justify-between items-center mb-4">
                     <div>
-                      <span className="font-medium">{t('batch.upload.selected')} </span>
-                      <span>{uploadedFiles.length}/50 {t('batch.images')}</span>
+                      <span className="font-medium">已选择 </span>
+                      <span>{uploadedFiles.length}/50 张照片</span>
                     </div>
                     <div className="text-right">
-                      <span className="font-medium">{t('batch.upload.price')} </span>
+                      <span className="font-medium">总价: </span>
                       <span className="text-primary font-semibold">¥{uploadedFiles.length}.00</span>
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-6">
+                  <div className="flex flex-wrap gap-3 mb-6">
                     {uploadedFiles.map((file) => (
                       <div key={file.id} className="relative group">
-                        <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 shadow-sm">
+                        <div className="w-32 h-32 rounded-md overflow-hidden bg-gray-100 shadow-sm border border-gray-200">
                           <img 
                             src={file.preview} 
                             className="w-full h-full object-cover" 
                             alt="Preview" 
                           />
+                          {/* 绿色对勾图标 */}
+                          <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1.5 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                          {/* 红色删除按钮 */}
+                          <button 
+                            className="absolute bottom-2 right-2 bg-red-500 text-white rounded-full p-1.5 shadow-sm"
+                            onClick={() => handleRemoveFile(file.id)}
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
                         </div>
-                        <button 
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => handleRemoveFile(file.id)}
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
                       </div>
                     ))}
                     
+                    {/* 添加新图片按钮 */}
                     <div 
-                      className="aspect-square rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:bg-gray-50 transition"
+                      className="w-32 h-32 rounded-md border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition"
                       onClick={() => {
                         const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
                         if (fileInput) fileInput.click();
                       }}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
                       </svg>
+                      <span className="text-sm text-gray-500">添加图片</span>
                     </div>
                   </div>
                 </div>
@@ -190,28 +199,31 @@ export default function BatchGenerate() {
           
           <Card className="mb-8">
             <CardContent className="p-6">
-              <h2 className="font-poppins font-semibold text-2xl mb-4">{t('batch.style.title')}</h2>
-              <p className="text-gray-600 mb-6">{t('batch.style.description')}</p>
+              <h2 className="font-semibold text-2xl mb-4">选择风格 (所有图片将应用相同风格)</h2>
+              <p className="text-gray-600 mb-6">为您的图片选择最合适的处理风格，不同风格会产生不同的效果</p>
               
               <StyleSelector 
                 selectedStyle={selectedStyle}
                 onStyleSelect={handleStyleSelect}
               />
               
-              <div className="flex justify-end">
+              <div className="flex flex-col items-end mt-8">
+                <div className="text-lg font-semibold mb-3">总计: <span className="text-primary">¥{uploadedFiles.length}.00</span></div>
+                <div className="text-sm text-gray-600 mb-4">{uploadedFiles.length}张图片 × ¥1/张</div>
                 <Button
                   className="px-8 py-3"
+                  size="lg"
                   onClick={handleStartTransformation}
                   disabled={uploadedFiles.length === 0 || processing || !user || (user?.points < pointCost)}
                 >
                   {processing ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {t('batch.processing')}
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      处理中...
                     </>
                   ) : (
                     <>
-                      <span>{t('batch.generate')} {uploadedFiles.length} {t('batch.images')}</span>
+                      <span>生成 {uploadedFiles.length} 张图片</span>
                       <ArrowRight className="ml-2 h-5 w-5" />
                     </>
                   )}
@@ -225,7 +237,7 @@ export default function BatchGenerate() {
           <Card>
             <CardContent className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="font-poppins font-semibold text-2xl">{t('batch.gallery.title')}</h2>
+                <h2 className="font-semibold text-2xl">我的图片</h2>
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -233,7 +245,7 @@ export default function BatchGenerate() {
                   className="flex items-center gap-1"
                 >
                   <RefreshCw className="h-4 w-4" />
-                  {t('batch.gallery.refresh')}
+                  刷新
                 </Button>
               </div>
               <ImageGallery />

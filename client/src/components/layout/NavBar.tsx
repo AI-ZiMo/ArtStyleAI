@@ -1,6 +1,7 @@
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/contexts/UserContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   DropdownMenu,
@@ -10,9 +11,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Menu } from 'lucide-react';
 import { useLocation } from 'wouter';
+import LanguageSwitcher from './LanguageSwitcher';
 
 export default function NavBar() {
   const { user, loading } = useUser();
+  const { t } = useLanguage();
   const [location] = useLocation();
 
   return (
@@ -52,24 +55,25 @@ export default function NavBar() {
           <div className="hidden md:flex space-x-6">
             <Link href="/">
               <span className={`${location === '/' ? 'text-primary border-b-2 border-primary pb-1' : 'text-textDark'} font-medium cursor-pointer`}>
-                Home
+                {t('nav.home')}
               </span>
             </Link>
             <Link href="/batch-generate">
               <span className={`${location === '/batch-generate' ? 'text-primary border-b-2 border-primary pb-1' : 'text-textDark'} font-medium cursor-pointer`}>
-                Batch Generate
+                {t('nav.batchGenerate')}
               </span>
             </Link>
             <Link href="/redeem-points">
               <span className={`${location === '/redeem-points' ? 'text-primary border-b-2 border-primary pb-1' : 'text-textDark'} font-medium cursor-pointer`}>
-                Redeem Points
+                {t('nav.redeemPoints')}
               </span>
             </Link>
             <Link href="/history">
               <span className={`${location === '/history' ? 'text-primary border-b-2 border-primary pb-1' : 'text-textDark'} font-medium cursor-pointer`}>
-                History
+                {t('nav.history')}
               </span>
             </Link>
+            <LanguageSwitcher />
           </div>
 
           <div className="flex items-center space-x-4">
@@ -102,7 +106,7 @@ export default function NavBar() {
                 <div className="hidden md:flex items-center">
                   <span className="text-sm text-gray-500 mr-2">{user?.email || 'demo@example.com'}</span>
                   <Button size="sm" className="rounded-full">
-                    Logout
+                    {t('nav.logout')}
                   </Button>
                 </div>
               </>
@@ -117,18 +121,21 @@ export default function NavBar() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem>
-                    <Link href="/">Home</Link>
+                    <Link href="/">{t('nav.home')}</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem>
-                    <Link href="/batch-generate">Batch Generate</Link>
+                    <Link href="/batch-generate">{t('nav.batchGenerate')}</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem>
-                    <Link href="/redeem-points">Redeem Points</Link>
+                    <Link href="/redeem-points">{t('nav.redeemPoints')}</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem>
-                    <Link href="/history">History</Link>
+                    <Link href="/history">{t('nav.history')}</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>Logout</DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <LanguageSwitcher />
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>{t('nav.logout')}</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

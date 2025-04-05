@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import ImageUploader from './ImageUploader';
 import RechargeDialog from './RechargeDialog';
+import ProcessingStatus from './ProcessingStatus';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { UploadedFile } from '@/types';
@@ -15,6 +16,7 @@ export default function BatchGenerate() {
   const [selectedStyle, setSelectedStyle] = useState('宫崎骏风格');
   const [processing, setProcessing] = useState(false);
   const [showRechargeDialog, setShowRechargeDialog] = useState(false);
+  const [showProcessingStatus, setShowProcessingStatus] = useState(false);
   const { toast } = useToast();
   const { user, refreshUser } = useUser();
 
@@ -49,6 +51,11 @@ export default function BatchGenerate() {
     }
     
     setUploadedFiles(uploadedFiles.filter(file => file.id !== id));
+  };
+
+  // 重置上传界面
+  const handleReupload = () => {
+    setShowProcessingStatus(false);
   };
 
   const handleStartTransformation = async () => {
@@ -109,6 +116,9 @@ export default function BatchGenerate() {
         title: "处理启动",
         description: `已开始处理 ${uploadedFiles.length} 张图片`,
       });
+      
+      // 显示处理状态页面
+      setShowProcessingStatus(true);
     } catch (error) {
       console.error('Transformation failed:', error);
       toast({
@@ -121,6 +131,17 @@ export default function BatchGenerate() {
     }
   };
 
+  // 添加一个测试按钮 - 实际使用时删除
+  const testProcessingStatus = () => {
+    setShowProcessingStatus(true);
+  };
+
+  // 如果正在显示处理状态页面，则渲染处理状态组件
+  if (showProcessingStatus) {
+    return <ProcessingStatus onReupload={handleReupload} />;
+  }
+
+  // 否则渲染上传页面
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       <h1 className="text-3xl font-bold mb-6">批量图片生成</h1>
@@ -283,6 +304,12 @@ export default function BatchGenerate() {
                     查看详细积分规则
                   </a>
                 </p>
+                <button 
+                  onClick={testProcessingStatus}
+                  className="mt-4 w-full bg-amber-500 text-white py-2 px-4 rounded-md hover:bg-amber-600"
+                >
+                  测试处理状态页面
+                </button>
               </div>
             </CardContent>
           </Card>

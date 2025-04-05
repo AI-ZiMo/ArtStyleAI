@@ -29,6 +29,7 @@ export interface Image {
   transformedUrl?: string;
   style: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
+  errorMessage?: string;
   createdAt: string;
 }
 

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, array } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -21,6 +21,7 @@ export const images = pgTable("images", {
   transformedUrl: text("transformed_url"),
   style: text("style").notNull(),
   status: text("status").notNull().default("pending"),
+  errorMessage: text("error_message"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

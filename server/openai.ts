@@ -60,7 +60,7 @@ export async function transformImage(
     
     // 使用流式调用接收响应
     const stream = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL || "gpt-4o-image-vip", // Using the specified OpenAI vision model
+      model: process.env.OPENAI_MODEL || "gpt-4o-image", // Using the specified OpenAI vision model
       messages: [
         {
           role: "user", 
@@ -103,7 +103,7 @@ export async function transformImage(
         // 避免日志过于频繁，超过logInterval时间间隔才记录
         if (currentTime - lastLogTime > logInterval) {
           console.log(`收到chunk #${chunkCount}: ${content.length}字节 [总计: ${fullContent.length}字节]`);
-          console.log(`chunk内容预览: ${content.substring(0, Math.min(50, content.length))}${content.length > 50 ? '...' : ''}`);
+          console.log(`完整的chunk内容: ${content}`);
           lastLogTime = currentTime;
         }
         
@@ -200,15 +200,15 @@ export async function transformImage(
                 console.log(`[✗] 在JSON字符串中未找到图像数据`);
               }
             }
-          } catch (parseError) {
-            console.error(`[✗] JSON解析失败: ${parseError.message}`);
+          } catch (parseError: any) {
+            console.error(`[✗] JSON解析失败: ${parseError.message || '未知错误'}`);
             console.log(`[信息] 无效JSON内容预览: ${jsonString.substring(0, 200)}...`);
           }
         } else {
           console.log(`[✗] 未找到JSON格式数据`);
         }
-      } catch (error) {
-        console.error(`[✗] 内容解析过程出错: ${error.message}`);
+      } catch (error: any) {
+        console.error(`[✗] 内容解析过程出错: ${error.message || '未知错误'}`);
       }
       
       // 方法3: 尝试查找更宽松的图像数据模式
@@ -236,9 +236,30 @@ export async function transformImage(
       console.log(`完整响应内容:\n${fullContent}`);
     }
     
+    // 检查内容审核失败的情况
+    if (!transformedBase64 && fullContent) {
+      if (fullContent.toLowerCase().includes("input_moderation") || 
+          fullContent.toLowerCase().includes("moderation") || 
+          fullContent.toLowerCase().includes("failed") || 
+          fullContent.toLowerCase().includes("failure")) {
+        
+        // 从响应中提取具体的失败原因
+        let failureReason = "内容审核失败";
+        const failureMatch = fullContent.match(/failure reason[：:]\s*([^\n]+)/i);
+        if (failureMatch) {
+          failureReason = failureMatch[1].trim();
+        }
+        
+        console.error(`内容审核失败，原因: ${failureReason}`);
+        await storage.updateImageStatus(imageId, "failed", undefined, `内容审核失败：${failureReason}`);
+        throw new Error(`内容审核失败：${failureReason}`);
+      }
+    }
+    
     // 如果仍然没有找到图像数据，则抛出错误
     if (!transformedBase64) {
       console.error(`No valid image data found in the response for image ${imageId}`);
+      await storage.updateImageStatus(imageId, "failed", undefined, "无法从响应中提取有效图像数据");
       throw new Error("No valid image data found in the response");
     }
     
@@ -249,13 +270,41 @@ export async function transformImage(
   } catch (error: any) {
     console.error(`Error transforming image ${imageId}:`, error);
     
+    // 提取详细错误信息
+    let errorMessage = error.message || "未知错误";
+    
     // Log detailed error information
     if (error.response) {
       // OpenAI API error response
       console.error(`OpenAI API Error Status: ${error.response.status}`);
       console.error(`Error message: ${JSON.stringify(error.response.data)}`);
+      
+      // 尝试从API错误响应中提取更有用的信息
+      try {
+        if (error.response.data && error.response.data.error) {
+          if (error.response.data.error.message) {
+            errorMessage = error.response.data.error.message;
+          }
+          if (error.response.data.error.code) {
+            if (error.response.data.error.code === 'content_filter') {
+              errorMessage = "内容审核失败。请尝试使用不同的图像或样式。";
+            }
+          }
+        }
+      } catch (e: any) {
+        console.error(`Error parsing API error response: ${e.message || '未知错误'}`);
+      }
     } else if (error.message) {
       console.error(`Error message: ${error.message}`);
+      
+      // 为特定错误设置友好的错误消息
+      if (error.message.includes("moderation") || error.message.includes("content")) {
+        errorMessage = "内容审核失败。请尝试使用不同的图像或样式。";
+      } else if (error.message.includes("timeout") || error.message.includes("network")) {
+        errorMessage = "网络连接超时。请稍后重试。";
+      } else if (error.message.includes("No valid image")) {
+        errorMessage = "无法生成有效的图像。请尝试其他图像或样式。";
+      }
     }
     
     if (error.stack) {
@@ -263,7 +312,7 @@ export async function transformImage(
     }
     
     // Update image status to failed
-    await storage.updateImageStatus(imageId, "failed");
+    await storage.updateImageStatus(imageId, "failed", undefined, errorMessage);
     throw error;
   }
 }

@@ -35,7 +35,7 @@ export interface IStorage {
   createImage(image: InsertImage): Promise<Image>;
   getUserImages(userId: number): Promise<Image[]>;
   getImage(id: number): Promise<Image | undefined>;
-  updateImageStatus(id: number, status: string, transformedUrl?: string): Promise<Image | undefined>;
+  updateImageStatus(id: number, status: string, transformedUrl?: string, errorMessage?: string): Promise<Image | undefined>;
 }
 
 // In-memory storage implementation
@@ -254,14 +254,15 @@ export class MemStorage implements IStorage {
     return this.images.get(id);
   }
   
-  async updateImageStatus(id: number, status: string, transformedUrl?: string): Promise<Image | undefined> {
+  async updateImageStatus(id: number, status: string, transformedUrl?: string, errorMessage?: string): Promise<Image | undefined> {
     const image = await this.getImage(id);
     if (!image) return undefined;
     
     const updatedImage: Image = { 
       ...image, 
       status,
-      ...(transformedUrl ? { transformedUrl } : {})
+      ...(transformedUrl ? { transformedUrl } : {}),
+      ...(errorMessage ? { errorMessage } : {})
     };
     
     this.images.set(id, updatedImage);

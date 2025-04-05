@@ -45,7 +45,7 @@ export default function BatchGenerate() {
         toast({
           title: t('toast.warning'),
           description: t('batch.upload.maxError', { max: 50 }),
-          variant: 'warning',
+          variant: 'destructive',
         });
         return combinedList.slice(0, 50);
       }

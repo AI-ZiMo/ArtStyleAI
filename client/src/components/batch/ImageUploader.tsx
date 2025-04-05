@@ -87,7 +87,16 @@ export default function ImageUploader({ onFilesSelected, maxFiles = 50 }: ImageU
           </p>
         </div>
         
-        <Button>{t('batch.upload.browse')}</Button>
+        <Button 
+          type="button" 
+          onClick={(e) => {
+            e.stopPropagation();
+            const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+            if (fileInput) fileInput.click();
+          }}
+        >
+          {t('batch.upload.browse')}
+        </Button>
       </div>
     </div>
   );

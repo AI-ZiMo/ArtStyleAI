@@ -2,11 +2,11 @@ import { Button } from '@/components/ui/button';
 import { useLocation } from 'wouter';
 import { imageStyles } from '@/lib/utils';
 import ComparisonSlider from '@/components/batch/ComparisonSlider';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from 'react-i18next';
 
 export default function HomePage() {
   const [, setLocation] = useLocation();
-  const { t } = useLanguage();
+  const { t } = useTranslation();
 
   return (
     <div>

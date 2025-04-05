@@ -1,6 +1,8 @@
 import { Link } from 'wouter';
+import { useTranslation } from 'react-i18next';
 
 export default function Footer() {
+  const { t } = useTranslation();
   return (
     <footer className="bg-white border-t border-gray-200 pt-10 pb-6">
       <div className="container mx-auto px-4">
@@ -70,78 +72,78 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="font-poppins font-semibold text-gray-800 mb-4">服务</h4>
+            <h4 className="font-poppins font-semibold text-gray-800 mb-4">{t('footer.services')}</h4>
             <ul className="space-y-2">
               <li>
                 <a href="#" className="text-gray-600 hover:text-primary text-sm">
-                  吉卜力风格转换
+                  {t('footer.services.ghibli')}
                 </a>
               </li>
               <li>
                 <a href="#" className="text-gray-600 hover:text-primary text-sm">
-                  价格方案
+                  {t('footer.services.pricing')}
                 </a>
               </li>
               <li>
                 <a href="#" className="text-gray-600 hover:text-primary text-sm">
-                  企业服务
+                  {t('footer.services.enterprise')}
                 </a>
               </li>
               <li>
                 <a href="#" className="text-gray-600 hover:text-primary text-sm">
-                  批量处理
+                  {t('footer.services.batch')}
                 </a>
               </li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-poppins font-semibold text-gray-800 mb-4">公司</h4>
+            <h4 className="font-poppins font-semibold text-gray-800 mb-4">{t('footer.company')}</h4>
             <ul className="space-y-2">
               <li>
                 <a href="#" className="text-gray-600 hover:text-primary text-sm">
-                  关于我们
+                  {t('footer.company.about')}
                 </a>
               </li>
               <li>
                 <a href="#" className="text-gray-600 hover:text-primary text-sm">
-                  技术博客
+                  {t('footer.company.blog')}
                 </a>
               </li>
               <li>
                 <a href="#" className="text-gray-600 hover:text-primary text-sm">
-                  加入我们
+                  {t('footer.company.careers')}
                 </a>
               </li>
               <li>
                 <a href="#" className="text-gray-600 hover:text-primary text-sm">
-                  联系我们
+                  {t('footer.company.contact')}
                 </a>
               </li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-poppins font-semibold text-gray-800 mb-4">法律</h4>
+            <h4 className="font-poppins font-semibold text-gray-800 mb-4">{t('footer.legal')}</h4>
             <ul className="space-y-2">
               <li>
                 <a href="#" className="text-gray-600 hover:text-primary text-sm">
-                  隐私政策
+                  {t('footer.legal.privacy')}
                 </a>
               </li>
               <li>
                 <a href="#" className="text-gray-600 hover:text-primary text-sm">
-                  使用条款
+                  {t('footer.legal.terms')}
                 </a>
               </li>
               <li>
                 <a href="#" className="text-gray-600 hover:text-primary text-sm">
-                  版权声明
+                  {t('footer.legal.copyright')}
                 </a>
               </li>
               <li>
                 <a href="#" className="text-gray-600 hover:text-primary text-sm">
-                  退款政策
+                  {t('footer.legal.refund')}
                 </a>
               </li>
             </ul>
@@ -150,7 +152,7 @@ export default function Footer() {
 
         <div className="border-t border-gray-200 pt-6">
           <p className="text-gray-500 text-sm text-center">
-            &copy; 2023 Imagic AI. All rights reserved.
+            {t('footer.copyright')}
           </p>
         </div>
       </div>

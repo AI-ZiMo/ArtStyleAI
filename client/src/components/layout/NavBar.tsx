@@ -1,7 +1,7 @@
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/contexts/UserContext';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from 'react-i18next';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   DropdownMenu,
@@ -15,7 +15,7 @@ import LanguageSwitcher from './LanguageSwitcher';
 
 export default function NavBar() {
   const { user, loading } = useUser();
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const [location] = useLocation();
 
   return (

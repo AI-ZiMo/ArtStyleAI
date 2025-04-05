@@ -49,10 +49,11 @@ export async function transformImage(
     
     const response = await openai.chat.completions.create({
       model: process.env.OPENAI_MODEL || "gpt-4o-image-vip", // Using the specified OpenAI vision model
+      response_format: { type: "json_object" }, // 指定返回JSON格式
       messages: [
         {
           role: "system",
-          content: "You are an expert image transformation AI. Your task is to transform the provided image according to the style description and return the transformed image as a data URL. Always return your response with a data:image base64 URL that contains the transformed image."
+          content: "你是一个专业的图像处理AI。按照提供的风格描述转换图像，并将转换后的图像作为base64 URL返回。必须按照以下JSON格式返回响应：{\"prompt\": \"风格描述\", \"image\": \"data:image/jpeg;base64,...\"}"
         },
         {
           role: "user", 
@@ -65,7 +66,7 @@ export async function transformImage(
             },
             {
               type: "text",
-              text: enhancedPrompt
+              text: `${enhancedPrompt}\n\n重要提示：请将转换后的图像作为base64 URL返回，格式为JSON：{\"prompt\": \"风格描述\", \"image\": \"data:image/jpeg;base64,...\"}`
             },
           ]
         }
@@ -85,21 +86,65 @@ export async function transformImage(
       throw new Error("Failed to generate transformed image: Empty content received");
     }
     
-    if (!content.includes("data:image")) {
-      console.error(`No image data marker found in content for image ${imageId}`);
-      console.log(`Content preview: ${content.substring(0, 200)}...`);
-      throw new Error("Failed to generate transformed image: No image data marker found");
+    // 尝试解析JSON响应（适应自定义API响应格式）
+    let transformedBase64;
+    
+    // 首先检查是否有直接的图像数据URL
+    if (content.includes("data:image")) {
+      // 标准方式：从文本中提取图像URL
+      const match = content.match(/data:image\/(jpeg|png|webp);base64,[^"'`\s]+/);
+      if (match) {
+        transformedBase64 = match[0];
+        console.log(`Successfully extracted direct image data for image ${imageId}`);
+      }
     }
-
-    // Extract base64 from the response
-    const match = content.match(/data:image\/(jpeg|png|webp);base64,[^"'`\s]+/);
-    if (!match) {
-      console.error(`Failed to extract base64 data from content for image ${imageId}`);
-      console.log(`Content preview: ${content.substring(0, 200)}...`);
+    
+    // 如果没有找到直接的图像数据，尝试解析为JSON
+    if (!transformedBase64) {
+      try {
+        // 尝试清理内容中的markdown代码块（如果有的话）
+        let cleanContent = content;
+        if (content.includes("```")) {
+          cleanContent = content.replace(/```(?:json)?([\s\S]*?)```/g, "$1").trim();
+        }
+        
+        // 尝试解析JSON
+        const jsonData = JSON.parse(cleanContent);
+        console.log(`Successfully parsed JSON for image ${imageId}`, Object.keys(jsonData));
+        
+        // 检查JSON响应中是否有图像数据字段
+        // 这里我们检查几种可能的字段名称
+        const possibleImageFields = ["image", "imageUrl", "image_url", "url", "data", "base64", "result", "output"];
+        
+        for (const field of possibleImageFields) {
+          if (jsonData[field] && typeof jsonData[field] === "string" && jsonData[field].includes("data:image")) {
+            transformedBase64 = jsonData[field];
+            console.log(`Found image data in JSON field: ${field}`);
+            break;
+          }
+        }
+        
+        // 如果没有找到标准字段，但响应包含任何base64图像数据，也尝试提取
+        if (!transformedBase64) {
+          const jsonString = JSON.stringify(jsonData);
+          const match = jsonString.match(/data:image\/(jpeg|png|webp);base64,[^"'`\s]+/);
+          if (match) {
+            transformedBase64 = match[0];
+            console.log(`Found image data in JSON string representation`);
+          }
+        }
+      } catch (error) {
+        console.error(`Failed to parse JSON from content for image ${imageId}:`, error);
+      }
+    }
+    
+    // 如果仍然没有找到图像数据，则抛出错误
+    if (!transformedBase64) {
+      console.error(`No valid image data found in the response for image ${imageId}`);
+      console.log(`Content preview: ${content.substring(0, 300)}...`);
       throw new Error("No valid image data found in the response");
     }
-
-    const transformedBase64 = match[0];
+    
     console.log(`Successfully extracted image data for image ${imageId}`);
     
     

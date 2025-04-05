@@ -95,9 +95,15 @@
     "empty": {
       "title": "No History Yet",
       "description": "You haven't generated any images yet or there are no images with",
-      "status": "status"
+      "status": "status",
+      "action": "Start Creating"
     },
-    "create": "Start Creating"
+    "refresh": "Refresh",
+    "status": {
+      "pending": "Pending",
+      "processing": "Processing",
+      "failed": "Failed"
+    }
   },
   "redeem": {
     "title": "Redeem Points",

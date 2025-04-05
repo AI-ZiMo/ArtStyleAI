@@ -8,6 +8,7 @@ import { Download, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDate } from '@/lib/utils';
 import { useLocation } from 'wouter';
+import { useTranslation } from 'react-i18next';
 
 export default function ImageGallery() {
   const { user } = useUser();
@@ -15,6 +16,7 @@ export default function ImageGallery() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const fetchImages = async () => {
@@ -34,8 +36,8 @@ export default function ImageGallery() {
       } catch (error) {
         console.error('Failed to fetch images:', error);
         toast({
-          title: 'Error',
-          description: 'Failed to load your generated images',
+          title: t('toast.error'),
+          description: t('toast.refresh.failed'),
           variant: 'destructive',
         });
       } finally {
@@ -56,14 +58,14 @@ export default function ImageGallery() {
       );
       
       toast({
-        title: 'Download Started',
-        description: 'Your image is being downloaded',
+        title: t('toast.download.start'),
+        description: t('toast.download.description'),
       });
     } catch (error) {
       console.error('Download failed:', error);
       toast({
-        title: 'Download Failed',
-        description: 'Failed to download the image',
+        title: t('toast.download.failed'),
+        description: t('toast.download.failed.description'),
         variant: 'destructive',
       });
     }
@@ -103,8 +105,8 @@ export default function ImageGallery() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="font-poppins font-semibold text-2xl mb-4">Previously Generated Images</h2>
-          <p className="text-gray-600 mb-6">Your recent transformations are displayed here. Click on any image to download.</p>
+          <h2 className="font-poppins font-semibold text-2xl mb-4">{t('gallery.title')}</h2>
+          <p className="text-gray-600 mb-6">{t('gallery.description')}</p>
         </div>
         
         {images.length > 0 && (
@@ -115,19 +117,19 @@ export default function ImageGallery() {
             className="flex items-center gap-1"
           >
             <RefreshCw className="h-4 w-4" />
-            <span>Refresh</span>
+            <span>{t('gallery.refresh')}</span>
           </Button>
         )}
       </div>
       
       {images.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
-          <p className="text-gray-500 mb-4">You haven't generated any images yet</p>
+          <p className="text-gray-500 mb-4">{t('gallery.empty')}</p>
           <Button
             variant="outline"
             onClick={() => setLocation('/batch-generate')}
           >
-            Start Creating
+            {t('gallery.start')}
           </Button>
         </div>
       ) : (
@@ -153,7 +155,7 @@ export default function ImageGallery() {
                   </div>
                 </div>
                 <div className="text-sm text-gray-600">
-                  Generated on {formatDate(image.createdAt)}
+                  {t('history.generated')} {formatDate(image.createdAt)}
                 </div>
               </div>
             ))}
@@ -165,7 +167,7 @@ export default function ImageGallery() {
               className="bg-gray-100 text-gray-700 hover:bg-gray-200"
               onClick={handleViewHistory}
             >
-              View All History
+              {t('gallery.viewAll')}
             </Button>
           </div>
         </>

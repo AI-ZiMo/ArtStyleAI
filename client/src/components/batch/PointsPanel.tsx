@@ -9,10 +9,12 @@ import { purchasePackage } from '@/lib/api';
 import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/use-toast';
 import { Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function PointsPanel() {
   const { user, updateUser } = useUser();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [selectedPackage, setSelectedPackage] = useState<number>(1); // Default to basic package
   const [loading, setLoading] = useState(false);
 
@@ -50,15 +52,15 @@ export default function PointsPanel() {
       updateUser(result.user);
       
       toast({
-        title: 'Purchase Successful',
-        description: `Added ${result.pointsAdded} points to your account!`,
+        title: t('toast.purchase.success'),
+        description: t('toast.purchase.added') + result.pointsAdded + t('toast.purchase.points'),
         variant: 'default',
       });
     } catch (error) {
       console.error('Purchase failed:', error);
       toast({
-        title: 'Purchase Failed',
-        description: 'An error occurred while processing your purchase',
+        title: t('toast.purchase.failed'),
+        description: t('toast.purchase.failed.description'),
         variant: 'destructive',
       });
     } finally {
@@ -70,24 +72,24 @@ export default function PointsPanel() {
     <Card className="p-6 mb-6 sticky top-4">
       <CardContent className="p-0">
         <div className="mb-6">
-          <h3 className="font-poppins font-semibold text-xl mb-2">My Points</h3>
+          <h3 className="font-poppins font-semibold text-xl mb-2">{t('points.title')}</h3>
           <div className="text-5xl font-poppins font-bold text-primary mb-2">{user.points}</div>
-          <p className="text-gray-600 text-sm mb-4">Available points</p>
+          <p className="text-gray-600 text-sm mb-4">{t('points.available')}</p>
           <div className="text-sm text-gray-600 mb-4">
-            <p>Style transformation costs 10 points per image</p>
-            <a href="#" className="text-primary font-medium hover:underline">View detailed rules</a>
+            <p>{t('points.cost')}</p>
+            <a href="#" className="text-primary font-medium hover:underline">{t('points.rules')}</a>
           </div>
           <Button 
             className="w-full bg-secondary hover:bg-secondary/90 mb-2"
             onClick={handlePurchase}
             disabled={loading}
           >
-            Add Points
+            {t('points.add')}
           </Button>
         </div>
         
         <div>
-          <h3 className="font-poppins font-semibold text-xl mb-4">Choose a Package</h3>
+          <h3 className="font-poppins font-semibold text-xl mb-4">{t('points.package.title')}</h3>
           
           <div className="space-y-3">
             {packageOptions.map((pkg) => (
@@ -106,7 +108,7 @@ export default function PointsPanel() {
                     <span className="text-lg font-semibold">{formatPrice(pkg.price)}</span>
                   </div>
                   <p className="text-sm text-gray-600 mb-2">{pkg.description}</p>
-                  <div className="text-sm text-primary font-medium">{pkg.points} points</div>
+                  <div className="text-sm text-primary font-medium">{pkg.points} {t('points.title')}</div>
                 </CardContent>
               </Card>
             ))}
@@ -117,7 +119,7 @@ export default function PointsPanel() {
             onClick={handlePurchase}
             disabled={loading}
           >
-            Confirm
+            {t('points.confirm')}
           </Button>
         </div>
       </CardContent>

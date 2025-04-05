@@ -11,6 +11,7 @@ import { uploadImages, transformImages } from '@/lib/api';
 import { useUser } from '@/contexts/UserContext';
 import { X, ArrowRight } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function BatchGenerate() {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -18,6 +19,7 @@ export default function BatchGenerate() {
   const [processing, setProcessing] = useState(false);
   const { toast } = useToast();
   const { user, refreshUser } = useUser();
+  const { t } = useTranslation();
 
   // Clean up previews when component unmounts
   useEffect(() => {
@@ -49,8 +51,8 @@ export default function BatchGenerate() {
   const handleStartTransformation = async () => {
     if (!user) {
       toast({
-        title: 'Error',
-        description: 'You must be logged in to transform images',
+        title: t('toast.error'),
+        description: t('toast.transform.error'),
         variant: 'destructive',
       });
       return;
@@ -58,8 +60,8 @@ export default function BatchGenerate() {
     
     if (uploadedFiles.length === 0) {
       toast({
-        title: 'No Images Selected',
-        description: 'Please upload at least one image to transform',
+        title: t('toast.error'),
+        description: t('toast.noImages.error'),
         variant: 'destructive',
       });
       return;
@@ -89,14 +91,14 @@ export default function BatchGenerate() {
       setUploadedFiles([]);
       
       toast({
-        title: 'Transformation Started',
-        description: `${uploadedFiles.length} image(s) are being processed. Check the history tab to see results.`,
+        title: t('toast.transform.start'),
+        description: uploadedFiles.length + t('toast.transform.description'),
       });
     } catch (error) {
       console.error('Transformation failed:', error);
       toast({
-        title: 'Transformation Failed',
-        description: 'An error occurred while processing your images',
+        title: t('toast.transform.failed'),
+        description: t('toast.transform.failed.description'),
         variant: 'destructive',
       });
     } finally {
@@ -108,14 +110,14 @@ export default function BatchGenerate() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-poppins font-bold mb-8">批量图片生成</h1>
+      <h1 className="text-3xl font-poppins font-bold mb-8">{t('batch.title')}</h1>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <Card className="mb-8">
             <CardContent className="p-6">
-              <h2 className="font-poppins font-semibold text-2xl mb-4">批量上传照片</h2>
-              <p className="text-gray-600 mb-6">最多可上传50张照片，每张照片 ¥1</p>
+              <h2 className="font-poppins font-semibold text-2xl mb-4">{t('batch.upload.title')}</h2>
+              <p className="text-gray-600 mb-6">{t('batch.upload.description')}</p>
               
               <ImageUploader onFilesSelected={handleFilesSelected} />
               
@@ -123,11 +125,11 @@ export default function BatchGenerate() {
                 <div>
                   <div className="flex justify-between items-center mb-4">
                     <div>
-                      <span className="font-medium">已选择: </span>
-                      <span>{uploadedFiles.length}/50 张照片</span>
+                      <span className="font-medium">{t('batch.upload.selected')} </span>
+                      <span>{uploadedFiles.length}/50 {t('batch.images')}</span>
                     </div>
                     <div className="text-right">
-                      <span className="font-medium">总价: </span>
+                      <span className="font-medium">{t('batch.upload.price')} </span>
                       <span className="text-primary font-semibold">¥{uploadedFiles.length}.00</span>
                     </div>
                   </div>
@@ -153,7 +155,10 @@ export default function BatchGenerate() {
                     
                     <div 
                       className="aspect-square rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:bg-gray-50 transition"
-                      onClick={() => document.querySelector('input[type="file"]')?.click()}
+                      onClick={() => {
+                        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+                        if (fileInput) fileInput.click();
+                      }}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -167,8 +172,8 @@ export default function BatchGenerate() {
           
           <Card className="mb-8">
             <CardContent className="p-6">
-              <h2 className="font-poppins font-semibold text-2xl mb-4">选择风格</h2>
-              <p className="text-gray-600 mb-6">(所有图片将应用相同风格)</p>
+              <h2 className="font-poppins font-semibold text-2xl mb-4">{t('batch.style.title')}</h2>
+              <p className="text-gray-600 mb-6">{t('batch.style.description')}</p>
               
               <StyleSelector 
                 selectedStyle={selectedStyle}
@@ -184,11 +189,11 @@ export default function BatchGenerate() {
                   {processing ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      处理中...
+                      {t('batch.processing')}
                     </>
                   ) : (
                     <>
-                      <span>生成 {uploadedFiles.length} 张图片</span>
+                      <span>{t('batch.generate')} {uploadedFiles.length} {t('batch.images')}</span>
                       <ArrowRight className="ml-2 h-5 w-5" />
                     </>
                   )}

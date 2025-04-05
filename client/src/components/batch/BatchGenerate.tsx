@@ -7,11 +7,12 @@ import ImageGallery from './ImageGallery';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { UploadedFile } from '@/types';
-import { uploadImages, transformImages } from '@/lib/api';
+import { uploadImages, transformImages, getQueueStatus } from '@/lib/api';
 import { useUser } from '@/contexts/UserContext';
-import { X, ArrowRight } from 'lucide-react';
+import { X, ArrowRight, RefreshCw } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 
 export default function BatchGenerate() {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -20,6 +21,13 @@ export default function BatchGenerate() {
   const { toast } = useToast();
   const { user, refreshUser } = useUser();
   const { t } = useTranslation();
+
+  // 获取队列状态
+  const { data: queueStatus, isLoading: isLoadingQueue, refetch: refetchQueueStatus } = useQuery({
+    queryKey: ['queueStatus'],
+    queryFn: getQueueStatus,
+    refetchInterval: 5000, // 每5秒自动刷新一次
+  });
 
   // Clean up previews when component unmounts
   useEffect(() => {
@@ -202,8 +210,61 @@ export default function BatchGenerate() {
             </CardContent>
           </Card>
           
+          {/* 队列状态信息 */}
+          {queueStatus && queueStatus.processing && (
+            <Card className="mb-8 bg-blue-50">
+              <CardContent className="p-6">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-poppins font-semibold text-xl">{t('batch.queue.title')}</h3>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => refetchQueueStatus()}
+                    className="flex items-center gap-1"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    {t('batch.queue.refresh')}
+                  </Button>
+                </div>
+                
+                <div className="mt-4 bg-white p-4 rounded-md shadow-sm">
+                  <div className="flex justify-between mb-2">
+                    <span>{t('batch.queue.processing')}:</span>
+                    <span className="font-medium text-blue-600">{queueStatus.processing ? t('batch.queue.yes') : t('batch.queue.no')}</span>
+                  </div>
+                  <div className="flex justify-between mb-2">
+                    <span>{t('batch.queue.current')}:</span>
+                    <span className="font-medium">{queueStatus.currentProcessing}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>{t('batch.queue.waiting')}:</span>
+                    <span className="font-medium">{queueStatus.queueLength}</span>
+                  </div>
+                  
+                  {queueStatus.queueLength > 0 && (
+                    <div className="mt-4">
+                      <p className="text-sm text-gray-600">{t('batch.queue.info')}</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          
           <Card>
             <CardContent className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="font-poppins font-semibold text-2xl">{t('batch.gallery.title')}</h2>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => refetchQueueStatus()}
+                  className="flex items-center gap-1"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  {t('batch.gallery.refresh')}
+                </Button>
+              </div>
               <ImageGallery />
             </CardContent>
           </Card>

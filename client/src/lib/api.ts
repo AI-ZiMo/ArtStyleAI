@@ -92,6 +92,25 @@ export async function getImageStatus(id: number): Promise<Image> {
 
 // Helper function to download an image (supports both base64 data URLs and external URLs)
 export function downloadImage(imageSource: string, filename: string = 'download.png'): void {
+  // 检查是否包含下载链接
+  if (imageSource.includes('[下载⏬]')) {
+    // 尝试从格式 ![file_id](preview_url) [下载⏬](download_url) 提取下载链接
+    const downloadMatch = imageSource.match(/\[下载⏬\]\((.*?)\)/);
+    if (downloadMatch && downloadMatch[1]) {
+      const downloadUrl = downloadMatch[1];
+      
+      // 使用提取的下载链接
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      console.log(`Downloading from extracted URL: ${downloadUrl}`);
+      return;
+    }
+  }
+
   // 检查是否为外部URL链接
   if (imageSource.startsWith('http')) {
     // 创建一个隐藏的iframe来触发下载
@@ -115,4 +134,13 @@ export function downloadImage(imageSource: string, filename: string = 'download.
     link.click();
     document.body.removeChild(link);
   }
+}
+
+// 获取队列状态
+export async function getQueueStatus(): Promise<{ queueLength: number; processing: boolean; currentProcessing: number }> {
+  const res = await fetch('/api/queue/status');
+  if (!res.ok) {
+    throw new Error('Failed to get queue status');
+  }
+  return res.json();
 }

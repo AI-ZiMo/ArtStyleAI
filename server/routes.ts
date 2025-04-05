@@ -5,7 +5,8 @@ import multer from "multer";
 import fs from "fs";
 import path from "path";
 import { z } from "zod";
-import { base64ToBuffer, transformImage } from "./openai-new";
+import { base64ToBuffer } from "./openai-new";
+import { taskQueue } from "./queue";
 import { Buffer } from "buffer";
 
 // Configure multer for file uploads
@@ -215,45 +216,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Deduct points
       await storage.updateUserPoints(user.id, user.points - totalCost);
       
-      // Process each image (start the process but don't wait for completion)
-      imageIds.forEach(async (imageId) => {
-        try {
-          console.log(`Starting transformation process for image ID: ${imageId} with style: ${style}`);
-          const image = await storage.getImage(imageId);
-          
-          if (!image) {
-            console.error(`Image ${imageId} not found`);
-            return;
-          }
-          
-          console.log(`Found image ${imageId}, original URL length: ${image.originalUrl.length} characters`);
-          
-          // Parse base64 from original URL
-          const buffer = base64ToBuffer(image.originalUrl);
-          console.log(`Successfully parsed image ${imageId} to buffer, size: ${buffer.length} bytes`);
-          
-          // Transform image
-          console.log(`Calling transformImage for image ${imageId}...`);
-          const transformedUrl = await transformImage(buffer, style, imageId);
-          console.log(`Image ${imageId} transformation completed successfully`);
-          
-          // Update image with transformed URL
-          await storage.updateImageStatus(imageId, "completed", transformedUrl);
-          console.log(`Image ${imageId} status updated to "completed"`);
-        } catch (error: any) {
-          console.error(`Error transforming image ${imageId}:`, error);
-          
-          // More detailed error logging
-          if (error.message) {
-            console.error(`Error message for image ${imageId}: ${error.message}`);
-          }
-          
-          // 提取错误消息，确保保存到数据库中
-          const errorMessage = error.message || "未知错误";
-          await storage.updateImageStatus(imageId, "failed", undefined, errorMessage);
-          console.log(`Image ${imageId} status updated to "failed", error: ${errorMessage}`);
-        }
+      // 添加任务到队列，按照添加顺序逐个处理
+      console.log(`将 ${imageIds.length} 个图片添加到处理队列中`);
+      
+      imageIds.forEach(imageId => {
+        // 将每个图片添加到任务队列
+        taskQueue.addTask(imageId, style, user.id);
+        console.log(`图片 ${imageId} 已添加到处理队列`);
       });
+      
+      // 获取队列状态
+      const queueStatus = taskQueue.getStatus();
+      console.log(`当前队列状态: 长度=${queueStatus.queueLength}, 正在处理=${queueStatus.processing}`);
       
       res.json({ message: "Transformation started", totalCost });
     } catch (error) {
@@ -303,6 +277,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     res.json(image);
+  });
+  
+  // 获取任务队列状态
+  app.get("/api/queue/status", (_req, res) => {
+    const status = taskQueue.getStatus();
+    res.json({ 
+      queueLength: status.queueLength,
+      processing: status.processing,
+      currentProcessing: status.currentProcessing
+    });
   });
 
   const httpServer = createServer(app);

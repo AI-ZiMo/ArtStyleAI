@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Image } from '@/types';
-import { getUserImages, downloadImage } from '@/lib/api';
+import { getUserImages, downloadImage, getQueueStatus, getImageStatus } from '@/lib/api';
 import { useUser } from '@/contexts/UserContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Download, RefreshCw, Clock, Loader } from 'lucide-react';
@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { formatDate } from '@/lib/utils';
 import { useLocation } from 'wouter';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 
 export default function History() {
   const { user } = useUser();
@@ -20,7 +21,15 @@ export default function History() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { t } = useTranslation();
+  
+  // 查询队列状态
+  const { data: queueStatus, isLoading: isLoadingQueue } = useQuery({
+    queryKey: ['queueStatus'],
+    queryFn: getQueueStatus,
+    refetchInterval: 5000, // 每5秒自动刷新一次
+  });
 
+  // 获取图像列表
   useEffect(() => {
     const fetchImages = async () => {
       if (!user) return;
@@ -43,6 +52,81 @@ export default function History() {
 
     fetchImages();
   }, [user, toast]);
+  
+  // 当队列有处理中的任务时，自动检查正在处理的图片状态
+  useEffect(() => {
+    if (!queueStatus || !queueStatus.processing || !user) {
+      return;
+    }
+    
+    // 找出所有处于pending或processing状态的图片
+    const pendingImages = images.filter(img => 
+      img.status === 'pending' || img.status === 'processing'
+    );
+    
+    if (pendingImages.length === 0) {
+      return;
+    }
+    
+    // 设置计时器，每5秒更新一次图片状态
+    const timer = setInterval(async () => {
+      let updated = false;
+      
+      for (const img of pendingImages) {
+        try {
+          // 获取最新的图片状态
+          const updatedImage = await getImageStatus(img.id);
+          
+          // 如果状态已经改变，更新本地图片数组
+          if (updatedImage.status !== img.status || 
+              (updatedImage.transformedUrl && !img.transformedUrl)) {
+            
+            setImages(prevImages => prevImages.map(prevImg => 
+              prevImg.id === updatedImage.id ? updatedImage : prevImg
+            ));
+            
+            updated = true;
+            
+            // 如果图片处理完成，显示通知
+            if (updatedImage.status === 'completed' && img.status !== 'completed') {
+              toast({
+                title: t('toast.transform.completed'),
+                description: t('toast.transform.completed.description'),
+              });
+            }
+            
+            // 如果图片处理失败，显示通知
+            if (updatedImage.status === 'failed' && img.status !== 'failed') {
+              toast({
+                title: t('toast.transform.failed'),
+                description: updatedImage.errorMessage || t('toast.transform.failed.description'),
+                variant: 'destructive',
+              });
+            }
+          }
+        } catch (error) {
+          console.error(`Failed to update image ${img.id} status:`, error);
+        }
+      }
+      
+      // 如果没有更多等待处理的图片，清除计时器
+      if (updated) {
+        // 重新获取所有待处理图片
+        const currentPendingImages = images.filter(img => 
+          img.status === 'pending' || img.status === 'processing'
+        );
+        
+        if (currentPendingImages.length === 0) {
+          clearInterval(timer);
+        }
+      }
+    }, 5000);
+    
+    // 清理函数
+    return () => {
+      clearInterval(timer);
+    };
+  }, [queueStatus, images, user, toast, t]);
 
   const handleRefresh = async () => {
     if (!user) return;
@@ -109,6 +193,42 @@ export default function History() {
           {t('history.refresh')}
         </Button>
       </div>
+      
+      {/* 队列状态卡片 */}
+      {queueStatus && queueStatus.processing && (
+        <Card className="mb-8 bg-blue-50">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-center">
+              <h3 className="font-poppins font-semibold text-xl">{t('history.queue.title')}</h3>
+              <div className="flex items-center text-blue-600">
+                <Loader className="h-4 w-4 animate-spin mr-2" />
+                <span className="text-sm font-medium">{t('history.queue.active')}</span>
+              </div>
+            </div>
+            
+            <div className="mt-4 bg-white p-4 rounded-md shadow-sm">
+              <div className="flex justify-between mb-2">
+                <span>{t('history.queue.processing')}:</span>
+                <span className="font-medium text-blue-600">{queueStatus.processing ? t('history.queue.yes') : t('history.queue.no')}</span>
+              </div>
+              <div className="flex justify-between mb-2">
+                <span>{t('history.queue.current')}:</span>
+                <span className="font-medium">{queueStatus.currentProcessing}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>{t('history.queue.waiting')}:</span>
+                <span className="font-medium">{queueStatus.queueLength}</span>
+              </div>
+              
+              {(queueStatus.queueLength > 0 || queueStatus.currentProcessing > 0) && (
+                <div className="mt-4">
+                  <p className="text-sm text-gray-600">{t('history.queue.info')}</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
       
       <Card className="mb-8">
         <CardContent className="p-6">

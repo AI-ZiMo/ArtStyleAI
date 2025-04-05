@@ -1,0 +1,91 @@
+import { useCallback, useState } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { UploadedFile } from '@/types';
+import { validateFile, generateId } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Upload, XCircle, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+
+interface ImageUploaderProps {
+  onFilesSelected: (files: UploadedFile[]) => void;
+  maxFiles?: number;
+}
+
+export default function ImageUploader({ onFilesSelected, maxFiles = 50 }: ImageUploaderProps) {
+  const [error, setError] = useState<string | null>(null);
+
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    setError(null);
+    
+    // Check if user is trying to upload more than the max allowed files
+    if (acceptedFiles.length > maxFiles) {
+      setError(`You can only upload up to ${maxFiles} images`);
+      return;
+    }
+    
+    // Validate and process each file
+    const processedFiles: UploadedFile[] = [];
+    
+    for (const file of acceptedFiles) {
+      const validation = validateFile(file);
+      
+      if (!validation.valid) {
+        setError(validation.message);
+        return;
+      }
+      
+      const uploadedFile = Object.assign(file, {
+        id: generateId(),
+        preview: URL.createObjectURL(file)
+      });
+      
+      processedFiles.push(uploadedFile as UploadedFile);
+    }
+    
+    onFilesSelected(processedFiles);
+  }, [maxFiles, onFilesSelected]);
+  
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'image/jpeg': [],
+      'image/png': [],
+      'image/webp': []
+    },
+    maxSize: 5 * 1024 * 1024 // 5MB
+  });
+
+  return (
+    <div className="w-full">
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      
+      <div
+        {...getRootProps()}
+        className={`border-2 border-dashed rounded-lg p-8 bg-gray-50 text-center mb-6 ${
+          isDragActive ? 'border-primary bg-primary/5' : 'border-gray-300'
+        } hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer`}
+      >
+        <input {...getInputProps()} />
+        
+        <div className="mb-6">
+          <div className="flex justify-center mb-4">
+            <Upload className="h-16 w-16 text-gray-400" />
+          </div>
+          <p className="text-lg font-medium text-gray-700 mb-1">
+            {isDragActive ? 'Drop images here' : 'Drag images here or click to browse'}
+          </p>
+          <p className="text-sm text-gray-500">
+            Supports PNG, JPG or WebP (max 5MB per image)
+          </p>
+        </div>
+        
+        <Button>Browse Files</Button>
+      </div>
+    </div>
+  );
+}

@@ -46,24 +46,59 @@ export async function redeemCode(code: string, email: string): Promise<{ user: U
 }
 
 // Image related API functions
-export async function uploadImages(files: File[], style: string, email: string): Promise<{ images: Image[] }> {
-  const formData = new FormData();
-  files.forEach(file => {
-    formData.append('images', file);
-  });
-  formData.append('style', style);
-  formData.append('email', email);
-
-  const res = await fetch('/api/upload', {
-    method: 'POST',
-    body: formData,
-  });
-
-  if (!res.ok) {
-    throw new Error('Failed to upload images');
-  }
+export async function uploadImages(files: any[], style: string, email: string): Promise<{ images: Image[] }> {
+  // 检查是否有base64数据的图片
+  const hasBase64Images = files.some(file => file.base64Data);
   
-  return res.json();
+  if (hasBase64Images) {
+    // 使用JSON方式上传base64图片数据
+    const imageData = files.map(file => ({
+      filename: file.name,
+      type: file.type,
+      size: file.size,
+      base64: file.base64Data
+    }));
+    
+    const requestData = {
+      images: imageData,
+      style,
+      email
+    };
+    
+    const res = await fetch('/api/upload/base64', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestData)
+    });
+    
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ message: 'Unknown error' }));
+      throw new Error(errorData.message || 'Failed to upload images');
+    }
+    
+    return res.json();
+  } else {
+    // 使用传统的FormData方式上传文件
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('images', file);
+    });
+    formData.append('style', style);
+    formData.append('email', email);
+  
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+  
+    if (!res.ok) {
+      throw new Error('Failed to upload images');
+    }
+    
+    return res.json();
+  }
 }
 
 export async function transformImages(imageIds: number[], style: string, email: string): Promise<{ message: string; totalCost: number }> {

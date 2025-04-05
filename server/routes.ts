@@ -137,7 +137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Image upload route
+  // Image upload route for form data (traditional file upload)
   app.post("/api/upload", upload.array("images", 50), async (req, res) => {
     try {
       if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
@@ -177,6 +177,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error uploading images:", error);
       res.status(500).json({ message: "Server error" });
+    }
+  });
+  
+  // Image upload route for base64 data (compressed images)
+  app.post("/api/upload/base64", async (req, res) => {
+    try {
+      const schema = z.object({
+        images: z.array(z.object({
+          filename: z.string(),
+          type: z.string(),
+          size: z.number(),
+          base64: z.string()
+        })),
+        style: z.string(),
+        email: z.string().email()
+      });
+      
+      // 验证请求数据
+      const validationResult = schema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid request data", 
+          errors: validationResult.error.errors 
+        });
+      }
+      
+      const { images, style, email } = validationResult.data;
+      
+      if (!images || images.length === 0) {
+        return res.status(400).json({ message: "No images provided" });
+      }
+      
+      // Find user
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // 检查图片数量
+      if (images.length > 50) {
+        return res.status(400).json({ message: "Maximum of 50 images allowed" });
+      }
+      
+      // 处理每个base64图片
+      const savedImages = await Promise.all(
+        images.map(async (image) => {
+          // 验证base64字符串
+          if (!image.base64 || !image.base64.includes('base64,')) {
+            throw new Error(`Invalid base64 data for image ${image.filename}`);
+          }
+          
+          // 创建图片记录
+          return storage.createImage({
+            userId: user.id,
+            originalUrl: image.base64, // 直接使用完整的base64 URL
+            transformedUrl: undefined,
+            style: style,
+            status: "pending",
+          });
+        })
+      );
+      
+      res.json({ images: savedImages });
+    } catch (error) {
+      console.error("Error processing base64 images:", error);
+      res.status(500).json({ message: `Server error: ${error.message}` });
     }
   });
   

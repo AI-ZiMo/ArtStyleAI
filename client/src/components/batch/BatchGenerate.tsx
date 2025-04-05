@@ -13,6 +13,7 @@ import { Loader2, Check } from 'lucide-react';
 
 export default function BatchGenerate() {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState('宫崎骏风格');
   const [processing, setProcessing] = useState(false);
   const [showRechargeDialog, setShowRechargeDialog] = useState(false);
@@ -91,25 +92,44 @@ export default function BatchGenerate() {
     
     try {
       setProcessing(true);
+      setIsUploading(true);
       
-      // First upload the images
+      // 先标记所有文件为正在上传
+      setUploadedFiles(prevFiles => 
+        prevFiles.map(file => ({
+          ...file,
+          isUploaded: false
+        }))
+      );
+      
+      // 上传图片到服务器
       const uploadResult = await uploadImages(
         uploadedFiles,
         selectedStyle,
         user.email
       );
       
-      // Then start the transformation process
+      // 标记所有文件为已上传
+      setUploadedFiles(prevFiles => 
+        prevFiles.map(file => ({
+          ...file,
+          isUploaded: true
+        }))
+      );
+      
+      setIsUploading(false);
+      
+      // 然后开始转换处理
       const imageIds = uploadResult.images.map(img => img.id);
       await transformImages(imageIds, selectedStyle, user.email);
       
-      // Refresh user data to get updated points
+      // 刷新用户数据获取更新后的积分
       await refreshUser();
       
-      // Clean up file previews
+      // 清理文件预览
       uploadedFiles.forEach(file => URL.revokeObjectURL(file.preview));
       
-      // Reset state
+      // 重置状态
       setUploadedFiles([]);
       
       toast({
@@ -126,8 +146,17 @@ export default function BatchGenerate() {
         description: "图片处理失败，请稍后重试",
         variant: 'destructive',
       });
+      
+      // 重置上传状态
+      setUploadedFiles(prevFiles => 
+        prevFiles.map(file => ({
+          ...file,
+          isUploaded: false
+        }))
+      );
     } finally {
       setProcessing(false);
+      setIsUploading(false);
     }
   };
 
@@ -177,14 +206,25 @@ export default function BatchGenerate() {
                             className="w-full h-full object-cover" 
                             alt="Preview" 
                           />
-                          {/* 绿色对勾图标 */}
-                          <div className="absolute top-1 right-1 bg-green-500 text-white rounded-full p-1 shadow-sm">
-                            <Check className="h-3 w-3" />
-                          </div>
-                          {/* 红色删除按钮 */}
+                          
+                          {/* 上传状态指示器：加载中、已上传、错误 */}
+                          {isUploading && !file.isUploaded ? (
+                            // 加载中 - 显示旋转加载图标
+                            <div className="absolute top-1 right-1 bg-indigo-500 text-white rounded-full p-1 shadow-sm animate-pulse">
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            </div>
+                          ) : file.isUploaded ? (
+                            // 已上传成功 - 显示绿色对勾
+                            <div className="absolute top-1 right-1 bg-green-500 text-white rounded-full p-1 shadow-sm">
+                              <Check className="h-3 w-3" />
+                            </div>
+                          ) : null}
+                          
+                          {/* 红色删除按钮 - 不管上传状态如何都显示 */}
                           <button 
                             className="absolute bottom-1 right-1 bg-red-500 text-white rounded-full p-1 shadow-sm"
                             onClick={() => handleRemoveFile(file.id)}
+                            disabled={isUploading || processing}
                           >
                             <X className="h-3 w-3" />
                           </button>
@@ -192,19 +232,21 @@ export default function BatchGenerate() {
                       </div>
                     ))}
                     
-                    {/* 添加新图片按钮 */}
-                    <div 
-                      className="w-28 h-28 rounded-md border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition"
-                      onClick={() => {
-                        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-                        if (fileInput) fileInput.click();
-                      }}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
-                      </svg>
-                      <span className="text-xs text-gray-500">添加图片</span>
-                    </div>
+                    {/* 添加新图片按钮 - 如果正在上传则禁用 */}
+                    {!isUploading && !processing && (
+                      <div 
+                        className="w-28 h-28 rounded-md border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition"
+                        onClick={() => {
+                          const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+                          if (fileInput) fileInput.click();
+                        }}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span className="text-xs text-gray-500">添加图片</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -260,12 +302,12 @@ export default function BatchGenerate() {
                   className="px-6 py-5 bg-indigo-700 hover:bg-indigo-800 text-white"
                   size="lg"
                   onClick={handleStartTransformation}
-                  disabled={uploadedFiles.length === 0 || processing || !user}
+                  disabled={uploadedFiles.length === 0 || processing || isUploading || !user}
                 >
-                  {processing ? (
+                  {processing || isUploading ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      处理中...
+                      {isUploading ? "上传中..." : "处理中..."}
                     </>
                   ) : (
                     <>
@@ -298,7 +340,7 @@ export default function BatchGenerate() {
               </div>
               
               <div className="mt-4 text-sm text-gray-600">
-                <p className="mb-2">风格转换消耗10积分/张</p>
+                <p className="mb-2">风格转换消耗1积分/张</p>
                 <p>
                   <a href="#" className="text-indigo-700 hover:underline">
                     查看详细积分规则

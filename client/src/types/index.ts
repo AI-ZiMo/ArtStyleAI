@@ -43,4 +43,6 @@ export interface RedeemCode {
 export interface UploadedFile extends File {
   id: string;
   preview: string;
+  base64Data?: string;  // 图片的base64编码数据
+  isUploaded?: boolean; // 标记是否已成功上传
 }

@@ -27,7 +27,7 @@ export function truncateText(text: string, maxLength: number): string {
 }
 
 // Function to validate file before upload
-export function validateFile(file: File): { valid: boolean; message: string } {
+export function validateFile(file: File): { valid: boolean; message: string; needsCompression?: boolean } {
   // Check file type
   if (!file.type.match(/image\/(jpeg|png|webp)/)) {
     return {
@@ -39,12 +39,13 @@ export function validateFile(file: File): { valid: boolean; message: string } {
   // Check file size (5MB max)
   if (file.size > 5 * 1024 * 1024) {
     return {
-      valid: false,
-      message: 'File size must be less than 5MB',
+      valid: true, // Now allow large files but mark them for compression
+      message: '',
+      needsCompression: true // Flag that this file needs compression
     };
   }
 
-  return { valid: true, message: '' };
+  return { valid: true, message: '', needsCompression: false };
 }
 
 // Generate unique IDs for elements

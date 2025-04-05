@@ -16,42 +16,28 @@ export default function ImageUploader({ onFilesSelected, maxFiles = 50 }: ImageU
   const [isCompressing, setIsCompressing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 图片压缩函数
-  const compressImage = async (file: File): Promise<File> => {
+  // 图片压缩函数，只压缩needsCompression为true的图片
+  const compressImage = async (file: File, needsCompression: boolean): Promise<File> => {
+    // 如果不需要压缩，直接返回原文件
+    if (!needsCompression) {
+      return file;
+    }
+    
     try {
-      // 设定压缩参数，所有图片都会被压缩
-      // 根据原图大小动态设置压缩参数
+      // 压缩大于5MB的图片
       const fileSizeMB = file.size / (1024 * 1024);
-      let quality = 0.8;  // 默认压缩质量
-      let maxSizeMB = 1;  // 默认目标大小1MB
+      console.log(`大图片(${fileSizeMB.toFixed(2)}MB)，进行压缩处理`);
       
-      // 如果图片超过5MB，使用更激进的压缩
-      if (fileSizeMB > 5) {
-        quality = 0.7;
-        maxSizeMB = 1;
-        console.log(`大图片(${fileSizeMB.toFixed(2)}MB)，使用高压缩率`);
-      } 
-      // 如果图片在2-5MB之间，使用中等压缩
-      else if (fileSizeMB > 2) {
-        quality = 0.75;
-        maxSizeMB = 1.5;
-        console.log(`中等图片(${fileSizeMB.toFixed(2)}MB)，使用中等压缩率`);
-      }
-      // 如果图片小于2MB，使用轻度压缩
-      else {
-        quality = 0.8;
-        maxSizeMB = 1.8;
-        console.log(`小图片(${fileSizeMB.toFixed(2)}MB)，使用轻度压缩率`);
-      }
-      
+      // 设置压缩参数
       const options = {
-        maxSizeMB: maxSizeMB,      // 目标大小，根据原图调整
-        maxWidthOrHeight: 1920,    // 限制最大宽高
-        useWebWorker: true,        // 使用WebWorker进行压缩
-        fileType: file.type,       // 保持原始格式
-        quality: quality           // 调整压缩质量
+        maxSizeMB: 4.8,           // 保持在5MB以下
+        maxWidthOrHeight: 1920,   // 限制最大宽高
+        useWebWorker: true,       // 使用WebWorker进行压缩
+        fileType: file.type,      // 保持原始格式
+        quality: 0.75             // 中等压缩质量
       };
       
+      // 执行压缩
       const compressedFile = await imageCompression(file, options);
       
       // 计算压缩率并记录
@@ -69,7 +55,7 @@ export default function ImageUploader({ onFilesSelected, maxFiles = 50 }: ImageU
       try {
         console.log("使用备用压缩方法...");
         const backupOptions = {
-          maxSizeMB: 2,
+          maxSizeMB: 4.9,
           maxWidthOrHeight: 1600,
           useWebWorker: true,
           fileType: file.type
@@ -122,7 +108,7 @@ export default function ImageUploader({ onFilesSelected, maxFiles = 50 }: ImageU
         }
         
         // 压缩图片（如果需要）
-        const compressedFile = await compressImage(file);
+        const compressedFile = await compressImage(file, validation.needsCompression || false);
         
         // 转换为base64以便存储和传输
         const base64Data = await fileToBase64(compressedFile);
@@ -241,12 +227,11 @@ export default function ImageUploader({ onFilesSelected, maxFiles = 50 }: ImageU
                 浏览文件 或拖放图片至此处
               </div>
               <div className="text-xs text-gray-500 mb-3">
-                支持PNG、JPG或WebP格式，所有图片会根据大小智能压缩
+                支持PNG、JPG或WebP格式图片，最大文件限制为50MB
               </div>
               <div className="text-xs text-gray-500 mb-3">
-                <span className="text-amber-600 font-medium">·</span> 小于2MB：轻度压缩 
-                <span className="text-amber-600 font-medium ml-2">·</span> 2-5MB：中度压缩 
-                <span className="text-amber-600 font-medium ml-2">·</span> 大于5MB：高度压缩
+                <span className="text-amber-600 font-medium">·</span> 小于5MB：保持原始品质 
+                <span className="text-amber-600 font-medium ml-2">·</span> 大于5MB：自动压缩至5MB以下
               </div>
               
               <Button 

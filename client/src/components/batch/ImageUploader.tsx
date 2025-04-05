@@ -18,25 +18,67 @@ export default function ImageUploader({ onFilesSelected, maxFiles = 50 }: ImageU
 
   // 图片压缩函数
   const compressImage = async (file: File): Promise<File> => {
-    // 如果文件小于5MB，则不需要压缩
-    if (file.size <= 5 * 1024 * 1024) {
-      return file;
-    }
-    
-    const options = {
-      maxSizeMB: 5,              // 最大5MB
-      maxWidthOrHeight: 1920,    // 最大宽高
-      useWebWorker: true,        // 使用WebWorker进行压缩
-      fileType: file.type        // 保持原始格式
-    };
-    
     try {
+      // 设定压缩参数，所有图片都会被压缩
+      // 根据原图大小动态设置压缩参数
+      const fileSizeMB = file.size / (1024 * 1024);
+      let quality = 0.8;  // 默认压缩质量
+      let maxSizeMB = 1;  // 默认目标大小1MB
+      
+      // 如果图片超过5MB，使用更激进的压缩
+      if (fileSizeMB > 5) {
+        quality = 0.7;
+        maxSizeMB = 1;
+        console.log(`大图片(${fileSizeMB.toFixed(2)}MB)，使用高压缩率`);
+      } 
+      // 如果图片在2-5MB之间，使用中等压缩
+      else if (fileSizeMB > 2) {
+        quality = 0.75;
+        maxSizeMB = 1.5;
+        console.log(`中等图片(${fileSizeMB.toFixed(2)}MB)，使用中等压缩率`);
+      }
+      // 如果图片小于2MB，使用轻度压缩
+      else {
+        quality = 0.8;
+        maxSizeMB = 1.8;
+        console.log(`小图片(${fileSizeMB.toFixed(2)}MB)，使用轻度压缩率`);
+      }
+      
+      const options = {
+        maxSizeMB: maxSizeMB,      // 目标大小，根据原图调整
+        maxWidthOrHeight: 1920,    // 限制最大宽高
+        useWebWorker: true,        // 使用WebWorker进行压缩
+        fileType: file.type,       // 保持原始格式
+        quality: quality           // 调整压缩质量
+      };
+      
       const compressedFile = await imageCompression(file, options);
-      console.log(`Compressed: ${file.size} -> ${compressedFile.size}, ${file.size/compressedFile.size}x smaller`);
+      
+      // 计算压缩率并记录
+      const compressionRatio = file.size / compressedFile.size;
+      const oldSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      const newSizeMB = (compressedFile.size / (1024 * 1024)).toFixed(2);
+      
+      console.log(`压缩结果: ${oldSizeMB}MB -> ${newSizeMB}MB, 压缩率: ${compressionRatio.toFixed(2)}x`);
+      
       return compressedFile;
     } catch (error) {
       console.error("图片压缩失败:", error);
-      return file; // 如果压缩失败，返回原始文件
+      
+      // 如果压缩失败，尝试使用更保守的方法
+      try {
+        console.log("使用备用压缩方法...");
+        const backupOptions = {
+          maxSizeMB: 2,
+          maxWidthOrHeight: 1600,
+          useWebWorker: true,
+          fileType: file.type
+        };
+        return await imageCompression(file, backupOptions);
+      } catch (backupError) {
+        console.error("备用压缩也失败:", backupError);
+        return file;  // 如果所有压缩方法都失败，返回原始文件
+      }
     }
   };
 
@@ -199,7 +241,12 @@ export default function ImageUploader({ onFilesSelected, maxFiles = 50 }: ImageU
                 浏览文件 或拖放图片至此处
               </div>
               <div className="text-xs text-gray-500 mb-3">
-                支持PNG、JPG或WebP，最大5MB/张 (大图会自动压缩)
+                支持PNG、JPG或WebP格式，所有图片会根据大小智能压缩
+              </div>
+              <div className="text-xs text-gray-500 mb-3">
+                <span className="text-amber-600 font-medium">·</span> 小于2MB：轻度压缩 
+                <span className="text-amber-600 font-medium ml-2">·</span> 2-5MB：中度压缩 
+                <span className="text-amber-600 font-medium ml-2">·</span> 大于5MB：高度压缩
               </div>
               
               <Button 

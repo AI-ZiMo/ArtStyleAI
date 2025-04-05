@@ -122,6 +122,35 @@ export default function ProcessingStatus({ onReupload }: ProcessingStatusProps) 
                     <div className="text-xs text-amber-600">系统状态</div>
                   </div>
                 </div>
+                
+                {queueStatus.processing && (
+                  <div className="mt-3 pt-3 border-t border-amber-200">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-amber-800">
+                        <span className="font-medium">当前处理:</span> 
+                        <span className="ml-1">
+                          图片 #{stats.processing > 0 ? images.find(img => img.status === 'processing')?.id || '...' : '...'}
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-xs text-amber-600 mr-2">预计剩余时间:</span>
+                        <span className="text-xs font-medium text-amber-800">
+                          {queueStatus.queueLength === 0 
+                            ? "处理完成中..." 
+                            : `${Math.max(1, Math.round(queueStatus.queueLength * 1.5))}分钟`}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-1">
+                      <div className="w-full bg-amber-200 rounded-full h-1.5 dark:bg-amber-700">
+                        <div 
+                          className="bg-amber-600 h-1.5 rounded-full transition-all duration-500"
+                          style={{ width: `${Math.round(((stats.completed + stats.processing) / Math.max(stats.total, 1)) * 100)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               
               <div className="grid grid-cols-4 gap-4 mb-6">

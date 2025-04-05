@@ -165,15 +165,16 @@ export async function transformImage(
         console.log(`[✓] 成功: 从响应中提取到图像URL链接`);
         console.log(`[信息] 图像URL: ${imageUrl}`);
         
-        // 因为是URL，直接使用它而不是尝试下载
+        // 因为是URL，直接使用它
         transformedBase64 = imageUrl;
         console.log(`[✓] 成功: 已提取图像URL`);
       } else {
         console.log(`[✗] 失败: 未能从响应中提取图像URL或base64数据`);
       }
     }
-      
-      // 方法2: 尝试从响应中查找并解析JSON
+    
+    // 方法2: 尝试从响应中查找并解析JSON
+    if (!transformedBase64) {
       console.log(`[方法2] 尝试从响应中解析JSON数据...`);
       try {
         // 检查内容是否包含JSON格式的字符串
@@ -230,20 +231,20 @@ export async function transformImage(
       } catch (error: any) {
         console.error(`[✗] 内容解析过程出错: ${error.message || '未知错误'}`);
       }
-      
-      // 方法3: 尝试查找更宽松的图像数据模式
-      if (!transformedBase64) {
-        console.log(`[方法3] 使用更宽松的模式查找图像数据...`);
-        // 查找任何可能的base64编码图像数据
-        const looseMatch = fullContent.match(/base64,[a-zA-Z0-9+/=]+/);
-        if (looseMatch) {
-          // 添加适当的前缀
-          transformedBase64 = `data:image/jpeg;${looseMatch[0]}`;
-          console.log(`[✓] 使用宽松模式找到可能的图像数据`);
-          console.log(`[警告] 这可能不是完整的图像数据URL格式`);
-        } else {
-          console.log(`[✗] 使用宽松模式也未找到图像数据`);
-        }
+    }
+    
+    // 方法3: 尝试查找更宽松的图像数据模式
+    if (!transformedBase64) {
+      console.log(`[方法3] 使用更宽松的模式查找图像数据...`);
+      // 查找任何可能的base64编码图像数据
+      const looseMatch = fullContent.match(/base64,[a-zA-Z0-9+/=]+/);
+      if (looseMatch) {
+        // 添加适当的前缀
+        transformedBase64 = `data:image/jpeg;${looseMatch[0]}`;
+        console.log(`[✓] 使用宽松模式找到可能的图像数据`);
+        console.log(`[警告] 这可能不是完整的图像数据URL格式`);
+      } else {
+        console.log(`[✗] 使用宽松模式也未找到图像数据`);
       }
     }
     
@@ -306,6 +307,9 @@ export async function transformImage(
     }
     
     console.log(`Successfully extracted image data for image ${imageId}`);
+    
+    // 更新图像状态为已完成
+    await storage.updateImageStatus(imageId, "completed", transformedBase64);
     
     // 返回提取的图像数据
     return transformedBase64;

@@ -160,7 +160,11 @@ export class MemStorage implements IStorage {
   
   async createUser(user: InsertUser): Promise<User> {
     const id = this.currentUserId++;
-    const newUser: User = { ...user, id };
+    const newUser: User = { 
+      ...user, 
+      id,
+      points: user.points || 0 // 确保points有一个默认值
+    };
     this.users.set(id, newUser);
     return newUser;
   }
@@ -221,7 +225,11 @@ export class MemStorage implements IStorage {
   
   async createRedeemCode(code: InsertRedeemCode): Promise<RedeemCode> {
     const id = this.currentRedeemCodeId++;
-    const newRedeemCode: RedeemCode = { ...code, id };
+    const newRedeemCode: RedeemCode = { 
+      ...code, 
+      id,
+      isUsed: code.isUsed || 0 // 确保isUsed有默认值
+    };
     this.redeemCodes.set(id, newRedeemCode);
     return newRedeemCode;
   }
@@ -239,7 +247,14 @@ export class MemStorage implements IStorage {
   async createImage(image: InsertImage): Promise<Image> {
     const id = this.currentImageId++;
     const now = new Date();
-    const newImage: Image = { ...image, id, createdAt: now };
+    const newImage: Image = { 
+      ...image, 
+      id, 
+      createdAt: now,
+      status: image.status || 'pending',
+      transformedUrl: image.transformedUrl || null,
+      errorMessage: image.errorMessage || null
+    };
     this.images.set(id, newImage);
     return newImage;
   }

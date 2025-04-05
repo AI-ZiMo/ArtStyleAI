@@ -90,12 +90,29 @@ export async function getImageStatus(id: number): Promise<Image> {
   return res.json();
 }
 
-// Helper function to download an image
-export function downloadImage(dataUrl: string, filename: string = 'download.png'): void {
-  const link = document.createElement('a');
-  link.href = dataUrl;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+// Helper function to download an image (supports both base64 data URLs and external URLs)
+export function downloadImage(imageSource: string, filename: string = 'download.png'): void {
+  // 检查是否为外部URL链接
+  if (imageSource.startsWith('http')) {
+    // 创建一个隐藏的iframe来触发下载
+    // 这种方法适用于外部URL，但浏览器可能会直接打开图像而不是下载
+    const link = document.createElement('a');
+    link.href = imageSource;
+    link.download = filename;
+    link.target = '_blank'; // 在新标签页打开
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    console.log(`Attempting to download from URL: ${imageSource}`);
+  } else {
+    // 如果是base64数据URL，使用标准的下载方法
+    const link = document.createElement('a');
+    link.href = imageSource;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 }

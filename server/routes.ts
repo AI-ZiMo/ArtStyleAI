@@ -5,7 +5,7 @@ import multer from "multer";
 import fs from "fs";
 import path from "path";
 import { z } from "zod";
-import { base64ToBuffer, transformImage } from "./openai";
+import { base64ToBuffer, transformImage } from "./openai-new";
 import { Buffer } from "buffer";
 
 // Configure multer for file uploads
@@ -248,8 +248,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.error(`Error message for image ${imageId}: ${error.message}`);
           }
           
-          await storage.updateImageStatus(imageId, "failed");
-          console.log(`Image ${imageId} status updated to "failed"`);
+          // 提取错误消息，确保保存到数据库中
+          const errorMessage = error.message || "未知错误";
+          await storage.updateImageStatus(imageId, "failed", undefined, errorMessage);
+          console.log(`Image ${imageId} status updated to "failed", error: ${errorMessage}`);
         }
       });
       

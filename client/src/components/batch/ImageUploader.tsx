@@ -19,13 +19,13 @@ export default function ImageUploader({ onFilesSelected, maxFiles = 50 }: ImageU
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setError(null);
     
-    // Check if user is trying to upload more than the max allowed files
+    // 由于现在是追加文件，需要确保不超过最大限制
     if (acceptedFiles.length > maxFiles) {
       setError(t('batch.upload.maxError', { max: maxFiles }));
       return;
     }
     
-    // Validate and process each file
+    // 验证和处理每个文件
     const processedFiles: UploadedFile[] = [];
     
     for (const file of acceptedFiles) {
@@ -44,8 +44,9 @@ export default function ImageUploader({ onFilesSelected, maxFiles = 50 }: ImageU
       processedFiles.push(uploadedFile as UploadedFile);
     }
     
+    // 将新文件传递给父组件，由父组件追加到现有文件列表中
     onFilesSelected(processedFiles);
-  }, [maxFiles, onFilesSelected]);
+  }, [maxFiles, onFilesSelected, t]);
   
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

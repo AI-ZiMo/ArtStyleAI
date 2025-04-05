@@ -107,7 +107,7 @@ export class MemStorage implements IStorage {
       name: "Ghibli Anime Style",
       description: "Warm, dreamy Studio Ghibli animation style",
       pointCost: 10,
-      promptTemplate: "Transform this image into the warm, dreamy Studio Ghibli anime style, with soft colors, detailed backgrounds, and charming character designs reminiscent of Hayao Miyazaki's work.",
+      promptTemplate: "Transform this image into a warm, dreamy anime style reminiscent of classic Japanese animation, with soft colors, detailed backgrounds, and charming character designs.",
       exampleBeforeUrl: "https://images.unsplash.com/photo-1547055442-5e3f464cf044?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
       exampleAfterUrl: "https://images.unsplash.com/photo-1563994234673-9436c578ab4b?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"
     });

@@ -37,10 +37,20 @@ export default function BatchGenerate() {
   }, [uploadedFiles]);
 
   const handleFilesSelected = (files: UploadedFile[]) => {
-    // Clean up any existing previews
-    uploadedFiles.forEach(file => URL.revokeObjectURL(file.preview));
-    
-    setUploadedFiles(files);
+    // 将新上传的文件添加到现有文件列表中，同时检查总数不超过最大限制
+    setUploadedFiles(prevFiles => {
+      // 如果添加这些文件会导致总数超过50个，显示提示并只取前面的部分
+      const combinedList = [...prevFiles, ...files];
+      if (combinedList.length > 50) {
+        toast({
+          title: t('toast.warning'),
+          description: t('batch.upload.maxError', { max: 50 }),
+          variant: 'warning',
+        });
+        return combinedList.slice(0, 50);
+      }
+      return combinedList;
+    });
   };
 
   const handleRemoveFile = (id: string) => {

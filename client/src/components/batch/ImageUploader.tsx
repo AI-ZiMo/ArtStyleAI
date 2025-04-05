@@ -1,11 +1,9 @@
-import { useCallback, useState } from 'react';
-import { useDropzone } from 'react-dropzone';
+import { useState, useRef, ChangeEvent } from 'react';
 import { UploadedFile } from '@/types';
 import { validateFile, generateId } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Upload, XCircle, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useTranslation } from 'react-i18next';
 
 interface ImageUploaderProps {
   onFilesSelected: (files: UploadedFile[]) => void;
@@ -14,49 +12,70 @@ interface ImageUploaderProps {
 
 export default function ImageUploader({ onFilesSelected, maxFiles = 50 }: ImageUploaderProps) {
   const [error, setError] = useState<string | null>(null);
-  const { t } = useTranslation();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    setError(null);
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
     
-    // 由于现在是追加文件，需要确保不超过最大限制
-    if (acceptedFiles.length > maxFiles) {
-      setError(t('batch.upload.maxError', { max: maxFiles }));
+    // 清空错误信息
+    setError(null);
+    console.log('Selected files:', files.length);
+    
+    // 检查文件数量限制
+    if (files.length > maxFiles) {
+      setError(`最多可上传${maxFiles}张图片`);
       return;
     }
     
-    // 验证和处理每个文件
+    // 处理选中的文件
     const processedFiles: UploadedFile[] = [];
     
-    for (const file of acceptedFiles) {
-      const validation = validateFile(file);
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
       
+      // 验证文件
+      const validation = validateFile(file);
       if (!validation.valid) {
         setError(validation.message);
         return;
       }
       
-      const uploadedFile = Object.assign(file, {
+      // 创建UploadedFile对象
+      const uploadedFile: UploadedFile = {
+        ...file,
         id: generateId(),
-        preview: URL.createObjectURL(file)
-      });
+        preview: URL.createObjectURL(file),
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        lastModified: file.lastModified,
+        slice: file.slice,
+        stream: file.stream,
+        text: file.text,
+        arrayBuffer: file.arrayBuffer,
+      };
       
-      processedFiles.push(uploadedFile as UploadedFile);
+      processedFiles.push(uploadedFile);
     }
     
-    // 将新文件传递给父组件，由父组件追加到现有文件列表中
+    console.log('Processed files:', processedFiles.length);
+    
+    // 清空文件输入以便再次选择相同的文件
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    
+    // 将处理后的文件传递给父组件
     onFilesSelected(processedFiles);
-  }, [maxFiles, onFilesSelected, t]);
-  
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      'image/jpeg': [],
-      'image/png': [],
-      'image/webp': []
-    },
-    maxSize: 5 * 1024 * 1024 // 5MB
-  });
+  };
+
+  // 触发文件选择对话框
+  const openFileSelector = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
 
   return (
     <div className="w-full">
@@ -67,14 +86,41 @@ export default function ImageUploader({ onFilesSelected, maxFiles = 50 }: ImageU
         </Alert>
       )}
       
-      <div
-        {...getRootProps()}
-        className={`border-2 border-dashed rounded-lg p-8 bg-gray-50 text-center mb-6 ${
-          isDragActive ? 'border-primary bg-primary/5' : 'border-gray-300'
-        } hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer`}
+      {/* 隐藏的文件输入 */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept="image/jpeg,image/png,image/webp"
+        multiple
+        className="hidden"
+      />
+      
+      {/* 拖放区域 */}
+      <div 
+        className="border-2 border-dashed rounded-lg p-8 bg-gray-50 text-center mb-6 hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer"
+        onClick={openFileSelector}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          const files = e.dataTransfer.files;
+          if (files && files.length > 0) {
+            // 模拟文件输入变化
+            const event = {
+              target: {
+                files
+              }
+            } as unknown as ChangeEvent<HTMLInputElement>;
+            
+            handleFileChange(event);
+          }
+        }}
       >
-        <input {...getInputProps()} />
-        
         <div className="flex flex-col items-center justify-center">
           <div className="mb-3">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -82,24 +128,37 @@ export default function ImageUploader({ onFilesSelected, maxFiles = 50 }: ImageU
             </svg>
           </div>
           <div className="text-base font-medium text-gray-700 mb-2">
-            {isDragActive ? '释放鼠标上传文件' : '浏览文件 或拖放图片至此处'}
+            浏览文件 或拖放图片至此处
           </div>
           <div className="text-sm text-gray-500 mb-4">
             支持PNG、JPG或WebP，最大5MB/张 (大图会自动压缩)
           </div>
+          
           <Button 
-            type="button" 
+            type="button"
+            id="browsefile-btn"
             variant="outline"
             className="border-dashed"
             onClick={(e) => {
               e.stopPropagation();
-              const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-              if (fileInput) fileInput.click();
+              openFileSelector();
             }}
           >
             浏览文件
           </Button>
         </div>
+      </div>
+      
+      {/* 这是最简单的按钮 */}
+      <div className="mt-2 text-center">
+        <Button 
+          variant="secondary"
+          id="browsefile-btn-simple"
+          onClick={openFileSelector}
+          className="mx-auto"
+        >
+          浏览文件
+        </Button>
       </div>
     </div>
   );

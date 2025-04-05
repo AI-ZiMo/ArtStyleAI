@@ -53,9 +53,9 @@ export default function History() {
     fetchImages();
   }, [user, toast]);
   
-  // 当队列有处理中的任务时，自动检查正在处理的图片状态
+  // 自动检查所有未完成图片的状态
   useEffect(() => {
-    if (!queueStatus || !queueStatus.processing || !user) {
+    if (!user || images.length === 0) {
       return;
     }
     
@@ -68,9 +68,9 @@ export default function History() {
       return;
     }
     
-    // 设置计时器，每5秒更新一次图片状态
+    // 设置计时器，每3秒更新一次图片状态
     const timer = setInterval(async () => {
-      let updated = false;
+      let needAnotherCheck = false;
       
       for (const img of pendingImages) {
         try {
@@ -84,8 +84,6 @@ export default function History() {
             setImages(prevImages => prevImages.map(prevImg => 
               prevImg.id === updatedImage.id ? updatedImage : prevImg
             ));
-            
-            updated = true;
             
             // 如果图片处理完成，显示通知
             if (updatedImage.status === 'completed' && img.status !== 'completed') {
@@ -104,29 +102,47 @@ export default function History() {
               });
             }
           }
+          
+          // 如果图片仍然处于等待状态，需要继续检查
+          if (updatedImage.status === 'pending' || updatedImage.status === 'processing') {
+            needAnotherCheck = true;
+          }
         } catch (error) {
           console.error(`Failed to update image ${img.id} status:`, error);
+          needAnotherCheck = true; // 出错时也继续检查
         }
       }
       
-      // 如果没有更多等待处理的图片，清除计时器
-      if (updated) {
-        // 重新获取所有待处理图片
-        const currentPendingImages = images.filter(img => 
-          img.status === 'pending' || img.status === 'processing'
-        );
-        
-        if (currentPendingImages.length === 0) {
-          clearInterval(timer);
-        }
+      // 如果所有图片都已完成或失败，不需要再检查
+      if (!needAnotherCheck) {
+        clearInterval(timer);
       }
-    }, 5000);
+    }, 3000);
     
     // 清理函数
     return () => {
       clearInterval(timer);
     };
-  }, [queueStatus, images, user, toast, t]);
+  }, [images, user, toast, t]);
+
+  // 进入历史记录页面或切换标签时立即刷新图片列表
+  useEffect(() => {
+    const refreshImages = async () => {
+      if (!user) return;
+      
+      try {
+        setLoading(true);
+        const data = await getUserImages(user.email);
+        setImages(data);
+      } catch (error) {
+        console.error('Failed to auto-refresh images:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    refreshImages();
+  }, [activeTab, user]);
 
   const handleRefresh = async () => {
     if (!user) return;
@@ -194,41 +210,7 @@ export default function History() {
         </Button>
       </div>
       
-      {/* 队列状态卡片 */}
-      {queueStatus && queueStatus.processing && (
-        <Card className="mb-8 bg-blue-50">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-center">
-              <h3 className="font-poppins font-semibold text-xl">{t('history.queue.title')}</h3>
-              <div className="flex items-center text-blue-600">
-                <Loader className="h-4 w-4 animate-spin mr-2" />
-                <span className="text-sm font-medium">{t('history.queue.active')}</span>
-              </div>
-            </div>
-            
-            <div className="mt-4 bg-white p-4 rounded-md shadow-sm">
-              <div className="flex justify-between mb-2">
-                <span>{t('history.queue.processing')}:</span>
-                <span className="font-medium text-blue-600">{queueStatus.processing ? t('history.queue.yes') : t('history.queue.no')}</span>
-              </div>
-              <div className="flex justify-between mb-2">
-                <span>{t('history.queue.current')}:</span>
-                <span className="font-medium">{queueStatus.currentProcessing}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>{t('history.queue.waiting')}:</span>
-                <span className="font-medium">{queueStatus.queueLength}</span>
-              </div>
-              
-              {(queueStatus.queueLength > 0 || queueStatus.currentProcessing > 0) && (
-                <div className="mt-4">
-                  <p className="text-sm text-gray-600">{t('history.queue.info')}</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* 在后台自动检查图片状态，但不显示队列状态 */}
       
       <Card className="mb-8">
         <CardContent className="p-6">

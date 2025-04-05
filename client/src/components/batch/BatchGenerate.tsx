@@ -210,46 +210,7 @@ export default function BatchGenerate() {
             </CardContent>
           </Card>
           
-          {/* 队列状态信息 */}
-          {queueStatus && queueStatus.processing && (
-            <Card className="mb-8 bg-blue-50">
-              <CardContent className="p-6">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-poppins font-semibold text-xl">{t('batch.queue.title')}</h3>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => refetchQueueStatus()}
-                    className="flex items-center gap-1"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                    {t('batch.queue.refresh')}
-                  </Button>
-                </div>
-                
-                <div className="mt-4 bg-white p-4 rounded-md shadow-sm">
-                  <div className="flex justify-between mb-2">
-                    <span>{t('batch.queue.processing')}:</span>
-                    <span className="font-medium text-blue-600">{queueStatus.processing ? t('batch.queue.yes') : t('batch.queue.no')}</span>
-                  </div>
-                  <div className="flex justify-between mb-2">
-                    <span>{t('batch.queue.current')}:</span>
-                    <span className="font-medium">{queueStatus.currentProcessing}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>{t('batch.queue.waiting')}:</span>
-                    <span className="font-medium">{queueStatus.queueLength}</span>
-                  </div>
-                  
-                  {queueStatus.queueLength > 0 && (
-                    <div className="mt-4">
-                      <p className="text-sm text-gray-600">{t('batch.queue.info')}</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {/* 成功提交后的提示信息，不显示详细队列状态 */}
           
           <Card>
             <CardContent className="p-6">

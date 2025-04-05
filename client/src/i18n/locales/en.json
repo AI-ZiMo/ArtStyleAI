@@ -90,7 +90,23 @@
     "rules": "View detailed rules",
     "add": "Add Points",
     "package": {
-      "title": "Choose a package"
+      "title": "Choose a package",
+      "basic": {
+        "name": "Basic Package",
+        "description": "Perfect for beginners, generate 10 images"
+      },
+      "standard": {
+        "name": "Standard Package",
+        "description": "Daily use, generate 25 images"
+      },
+      "premium": {
+        "name": "Premium Package",
+        "description": "Professional creation, generate 60 images"
+      },
+      "unlimited": {
+        "name": "Unlimited Package",
+        "description": "Unlimited creativity, generate 150 images"
+      }
     },
     "confirm": "Confirm"
   },

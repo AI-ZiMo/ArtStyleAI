@@ -90,7 +90,23 @@
     "rules": "查看详细规则",
     "add": "添加积分",
     "package": {
-      "title": "选择套餐"
+      "title": "选择套餐",
+      "basic": {
+        "name": "基础套餐",
+        "description": "适合初学者，生成10张图片"
+      },
+      "standard": {
+        "name": "标准套餐",
+        "description": "日常使用，生成25张图片"
+      },
+      "premium": {
+        "name": "高级套餐",
+        "description": "专业创作，生成60张图片"
+      },
+      "unlimited": {
+        "name": "无限套餐",
+        "description": "无限创意，生成150张图片"
+      }
     },
     "confirm": "确认"
   },

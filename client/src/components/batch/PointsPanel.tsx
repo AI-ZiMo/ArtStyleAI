@@ -10,6 +10,26 @@ import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/use-toast';
 import { Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { TFunction } from 'i18next';
+
+// 获取套餐翻译的辅助函数
+const getPackageTranslation = (packageId: number, field: 'name' | 'description', t: TFunction): string => {
+  const packageKeys = {
+    1: 'basic',
+    2: 'standard',
+    3: 'premium',
+    4: 'unlimited'
+  };
+  
+  const key = packageKeys[packageId as keyof typeof packageKeys];
+  if (key) {
+    return t(`points.package.${key}.${field}`);
+  }
+  
+  // 如果找不到翻译，返回默认值
+  const defaultPackage = packageOptions.find(p => p.id === packageId);
+  return field === 'name' ? defaultPackage?.name || '' : defaultPackage?.description || '';
+};
 
 export default function PointsPanel() {
   const { user, updateUser } = useUser();
@@ -104,10 +124,10 @@ export default function PointsPanel() {
               >
                 <CardContent className="p-0">
                   <div className="flex justify-between items-center mb-1">
-                    <h4 className="font-medium">{pkg.name}</h4>
+                    <h4 className="font-medium">{getPackageTranslation(pkg.id, 'name', t)}</h4>
                     <span className="text-lg font-semibold">{formatPrice(pkg.price)}</span>
                   </div>
-                  <p className="text-sm text-gray-600 mb-2">{pkg.description}</p>
+                  <p className="text-sm text-gray-600 mb-2">{getPackageTranslation(pkg.id, 'description', t)}</p>
                   <div className="text-sm text-primary font-medium">{pkg.points} {t('points.title')}</div>
                 </CardContent>
               </Card>
